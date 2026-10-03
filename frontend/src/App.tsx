@@ -11,29 +11,72 @@ import BankSoalList from './pages/BankSoalList';
 import BankSoalGenerator from './pages/BankSoalGenerator';
 import BankSoalDetail from './pages/BankSoalDetail';
 import Kelas from './pages/Kelas';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 export default function App() {
-  return (
-    <Routes>
-      <Route path="/masuk" element={<Login />} />
-      <Route path="/daftar" element={<Register />} />
-      <Route
-        element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/modul-ajar" element={<ModulAjarList />} />
-        <Route path="/modul-ajar/baru" element={<ModulAjarGenerator />} />
-        <Route path="/modul-ajar/:id" element={<ModulAjarDetail />} />
-        <Route path="/bank-soal" element={<BankSoalList />} />
-        <Route path="/bank-soal/baru" element={<BankSoalGenerator />} />
-        <Route path="/bank-soal/:id" element={<BankSoalDetail />} />
-        <Route path="/kelas" element={<Kelas />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+	return (
+		<Routes>
+			<Route
+				path="/masuk"
+				element={<Login />}
+			/>
+			<Route
+				path="/daftar"
+				element={<Register />}
+			/>
+			<Route
+				path="/privacy-policy"
+				element={<PrivacyPolicy />}
+			/>
+			<Route
+				element={
+					<ProtectedRoute>
+						<Layout />
+					</ProtectedRoute>
+				}
+			>
+				<Route
+					path="/"
+					element={<Dashboard />}
+				/>
+				<Route
+					path="/modul-ajar"
+					element={<ModulAjarList />}
+				/>
+				<Route
+					path="/modul-ajar/baru"
+					element={<ModulAjarGenerator />}
+				/>
+				<Route
+					path="/modul-ajar/:id"
+					element={<ModulAjarDetail />}
+				/>
+				<Route
+					path="/bank-soal"
+					element={<BankSoalList />}
+				/>
+				<Route
+					path="/bank-soal/baru"
+					element={<BankSoalGenerator />}
+				/>
+				<Route
+					path="/bank-soal/:id"
+					element={<BankSoalDetail />}
+				/>
+				<Route
+					path="/kelas"
+					element={<Kelas />}
+				/>
+			</Route>
+			<Route
+				path="*"
+				element={
+					<Navigate
+						to="/"
+						replace
+					/>
+				}
+			/>
+		</Routes>
+	);
 }
