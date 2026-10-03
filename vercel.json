@@ -17,7 +17,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "my_frontend"
+      "destination": "my_frontend/$1"
     }
   ]
 }
