@@ -1,9 +1,9 @@
 {
   "version": 2,
-  "framework": "services",
   "services": {
     "my_frontend": {
-      "root": "frontend"
+      "root": "frontend",
+      "framework": "vite"
     },
     "my_backend": {
       "root": "backend",
