@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "services": {
+    "my_frontend": {
+      "root": "frontend",
+      "framework": "vite"
+    },
+    "my_backend": {
+      "root": "backend",
+      "entrypoint": "src/app.ts"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "my_backend"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "my_frontend/$1"
+    }
+  ]
+}

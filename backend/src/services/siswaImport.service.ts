@@ -1,9 +1,6 @@
 import ExcelJS from 'exceljs';
 import { z } from 'zod';
 
-// Membaca daftar siswa (nama + NIS) dari file Excel (.xlsx), CSV, atau foto/scan.
-// Hasilnya HANYA pratinjau: guru wajib memeriksanya sebelum disimpan, terutama untuk hasil foto.
-
 export interface SiswaImport {
   nama: string;
   nis: string;
@@ -26,13 +23,10 @@ function galat(pesan: string, status = 400): Error {
   return Object.assign(new Error(pesan), { status });
 }
 
-// ---------- pembersihan data ----------
-
 function adaHuruf(s: string): boolean {
   return /\p{L}/u.test(s);
 }
 
-// "AHMAD FAUZI" -> "Ahmad Fauzi" (hanya jika seluruh nama huruf besar)
 function rapikanKapital(nama: string): string {
   const hurufBesarSemua = nama === nama.toUpperCase() && nama !== nama.toLowerCase();
   if (!hurufBesarSemua) return nama;
@@ -43,7 +37,7 @@ function rapikanKapital(nama: string): string {
 
 function bersihkanNama(mentah: string): string {
   let nama = mentah
-    .replace(/^\s*\d{1,3}\s*[.)\-:]\s+/, '') // buang nomor urut "1. " / "2) "
+    .replace(/^\s*\d{1,3}\s*[.)\-:]\s+/, '')
     .replace(/\s+/g, ' ')
     .trim();
   nama = rapikanKapital(nama);
@@ -59,7 +53,6 @@ function kunciSiswa(s: SiswaImport): string {
   return nis && nis !== '-' ? `nis:${nis}` : `nama:${s.nama.trim().toLowerCase().replace(/\s+/g, ' ')}`;
 }
 
-// Gabungkan duplikat dalam daftar, batasi jumlah, dan kumpulkan peringatan.
 function rapikanDaftar(daftar: SiswaImport[], peringatan: string[]): SiswaImport[] {
   const dilihat = new Set<string>();
   const hasil: SiswaImport[] = [];
@@ -87,8 +80,6 @@ function rapikanDaftar(daftar: SiswaImport[], peringatan: string[]): SiswaImport
   }
   return hasil;
 }
-
-// ---------- tabel (Excel / CSV) ----------
 
 const RE_NAMA = /^nama(\s+(siswa|lengkap|peserta\s+didik))?$/i;
 const RE_NIS = /^(nis|nisn|nis\s*\/\s*nisn|no\.?\s*induk|nomor\s+induk)/i;
@@ -168,7 +159,6 @@ export async function bacaExcel(buffer: Buffer): Promise<HasilImport> {
   return { siswa, peringatan, sumber: 'excel' };
 }
 
-// Parser CSV sederhana yang mengenali tanda kutip. Pemisah dideteksi otomatis (, ; atau tab).
 function bacaBarisCsv(teks: string): string[][] {
   const bersih = teks.replace(/^\uFEFF/, '');
   const barisPertama = bersih.split(/\r?\n/, 1)[0] ?? '';
