@@ -12,7 +12,7 @@ const app = express();
 app.use(cors({ 
   origin: [
     'http://localhost:5173', 
-    'https://ajarin-self.vercel.app/',
+    'https://ajarin-self.vercel.app',
     process.env.CLIENT_URL || ''
   ],
   credentials: true
