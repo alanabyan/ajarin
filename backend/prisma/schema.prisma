@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// PostgreSQL — kompatibel dengan Supabase maupun Neon.
+// Isi DATABASE_URL di file .env sesuai provider yang dipakai.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Jenjang {
+  SD
+  SMP
+  SMA
+  SMK
+}
+
+enum StatusDokumen {
+  DRAFT
+  FINAL
+}
+
+model User {
+  id        String   @id @default(uuid())
+  nama      String
+  email     String   @unique
+  password  String
+  jenjang   Jenjang
+  mapel     String
+  sekolah   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  modulAjar  ModulAjar[]
+  soal       Soal[]
+  asesmenSet AsesmenSet[]
+  kelasList  Kelas[]
+}
+
+model Kelas {
+  id        String   @id @default(uuid())
+  nama      String // contoh: "8B"
+  tapel     String // tahun pelajaran, contoh: "2026/2027"
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siswa     Siswa[]
+  createdAt DateTime @default(now())
+}
+
+model Siswa {
+  id      String  @id @default(uuid())
+  nama    String
+  nis     String
+  kelasId String
+  kelas   Kelas   @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  nilai   Nilai[]
+}
+
+model ModulAjar {
+  id                 String        @id @default(uuid())
+  userId             String
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  judul              String
+  topik              String
+  jenjang            Jenjang
+  kelas              String
+  alokasiWaktu       String
+  kondisiKelas       String?
+  tujuanPembelajaran String
+  kontenDraf         String        @db.Text
+  status             StatusDokumen @default(DRAFT)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model AsesmenSet {
+  id                   String    @id @default(uuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  judul                String
+  mapel                String
+  kelas                String
+  createdAt            DateTime  @default(now())
+  soal                 Soal[]
+
+  googleFormId         String?
+  googleFormUrl        String? // link untuk siswa
+  googleFormEditUrl    String? // link edit untuk guru
+  googleFormDibuatPada DateTime?
+}
+
+model Soal {
+  id               String      @id @default(uuid())
+  userId           String
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asesmenSetId     String?
+  asesmenSet       AsesmenSet? @relation(fields: [asesmenSetId], references: [id], onDelete: SetNull)
+  materi           String
+  tingkatKesulitan String // mudah, sedang, sulit
+  pertanyaan       String      @db.Text
+  pilihanJawaban   Json?
+  kunciJawaban     String
+  pembahasan       String?     @db.Text
+  createdAt        DateTime    @default(now())
+}
+
+model Nilai {
+  id      String   @id @default(uuid())
+  siswaId String
+  siswa   Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  mapel   String
+  jenis   String // Tugas, UH, UTS, UAS
+  nilai   Float
+  tanggal DateTime @default(now())
+}
