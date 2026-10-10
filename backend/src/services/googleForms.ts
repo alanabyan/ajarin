@@ -74,7 +74,6 @@ export interface HasilBuatForm {
 }
 
 // Pertanyaan pertama form adalah dropdown daftar nama siswa, sehingga siswa cukup memilih namanya
-// (tanpa mengetik) dan jawabannya pasti cocok dengan daftar kelas di Pelita Guru.
 export async function buatKuis(
   meta: { judul: string; mapel: string; kelas: string },
   butir: ButirForm[],

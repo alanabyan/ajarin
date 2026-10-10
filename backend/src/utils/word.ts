@@ -17,7 +17,6 @@ import {
 import { latexToText } from './latexToText';
 import type { SetUntukEkspor } from './excel';
 
-// Ekspor ke Word (.docx). Markdown yang dipakai Pelita Guru hanya himpunan bagian kecil, jadi diurai dengan
 // pembaca sederhana: judul, daftar, tabel, kutipan, garis, serta tebal / miring / kode / rumus di dalam baris.
 // Rumus LaTeX diubah ke teks Unicode (Word tidak merender LaTeX), sama seperti ekspor Excel.
 
@@ -194,7 +193,7 @@ export function markdownKeBlok(md: string): (Paragraph | Table)[] {
 
 function dokumen(isi: (Paragraph | Table)[]): Document {
   return new Document({
-    creator: 'Pelita Guru',
+    creator: 'Ajarin',
     styles: { default: { document: { run: { font: FONT, size: UKURAN } } } },
     sections: [{ properties: { page: { margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } }, children: isi }],
   });

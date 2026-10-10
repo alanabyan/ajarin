@@ -18,14 +18,14 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Pelita Guru',
-        short_name: 'Pelita Guru',
+        name: 'Ajarin',
+        short_name: 'Ajarin',
         description: 'Penerang jalan guru mengajar: modul ajar, bank soal, dan rekap nilai.',
         lang: 'id',
         start_url: '/dashboard',
         scope: '/',
         display: 'standalone',
-        theme_color: '#14213D',
+        theme_color: '#5350F7',
         background_color: '#FAF8F3',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },

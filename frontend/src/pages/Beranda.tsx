@@ -90,14 +90,14 @@ export default function Beranda() {
       <main>
         <section className="bg-ajarin-500 text-white">
           <div className="mx-auto max-w-6xl px-4 pb-16 pt-14 sm:px-6 sm:pb-24 sm:pt-20">
-            <p className="mb-5 inline-block rounded-full bg-white/10 px-3 py-1 text-xs text-pelita-400 sm:text-sm">
+            <p className="mb-5 inline-block rounded-full bg-white/15 px-3 py-1 text-xs text-ajarin-100 sm:text-sm">
               SDG 4 · Pendidikan Berkualitas
             </p>
             <h1 className="max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
-              Penerang jalan guru <span className="text-pelita-400">mengajar</span>.
+              Penerang jalan guru <span className="text-ajarin-200">mengajar</span>.
             </h1>
             <p className="mt-5 max-w-2xl text-base text-white/75 sm:text-lg">
-              Pelita Guru membantu guru honorer menyusun modul ajar, membuat bank soal, dan merekap nilai dalam satu
+              Ajarin membantu guru honorer menyusun modul ajar, membuat bank soal, dan merekap nilai dalam satu
               alur, supaya waktu lebih banyak untuk siswa.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -155,7 +155,7 @@ export default function Beranda() {
           <ol className="grid gap-6 md:grid-cols-3">
             {LANGKAH.map(([no, judul, isi]) => (
               <li key={no} className="flex gap-4">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-pelita-400 font-display text-lg font-semibold">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ajarin-100 font-display text-lg font-semibold text-ajarin-600">
                   {no}
                 </span>
                 <div>
@@ -167,11 +167,11 @@ export default function Beranda() {
           </ol>
         </section>
 
-        <section className="bg-pelita-50">
+        <section className="bg-ajarin-50">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
             <h2 className="mb-3 text-2xl font-semibold sm:text-3xl">Kontribusi pada SDG 4</h2>
             <p className="max-w-3xl text-tinta-700">
-              Pelita Guru mendukung target 4.c, yaitu meningkatkan jumlah guru yang berkualitas. Dengan perangkat ajar
+              Ajarin mendukung target 4.c, yaitu meningkatkan jumlah guru yang berkualitas. Dengan perangkat ajar
               yang lebih cepat disusun dan lebih rapi, guru honorer dapat mengajar dengan persiapan yang sama baiknya
               dengan rekan yang punya lebih banyak dukungan. Hasilnya adalah pembelajaran yang lebih merata bagi siswa.
             </p>
@@ -184,7 +184,7 @@ export default function Beranda() {
 
       <footer className="border-t border-tinta-100 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-tinta-500 sm:flex-row sm:justify-between sm:px-6">
-          <span>© 2026 Pelita Guru. Penerang jalan guru mengajar.</span>
+          <span>© 2026 Ajarin. Penerang jalan guru mengajar.</span>
           <Link to="/privasi" className="hover:underline">
             Kebijakan privasi
           </Link>

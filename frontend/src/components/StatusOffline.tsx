@@ -27,7 +27,7 @@ export function BannerStatus() {
       )}
       {versiBaru && (
         <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-tinta-100 bg-white px-4 py-3 text-sm">
-          <span>Versi baru Pelita Guru tersedia.</span>
+          <span>Versi baru Ajarin tersedia.</span>
           <button type="button" onClick={() => void updateServiceWorker(true)} className="btn-utama py-1">
             Muat ulang
           </button>

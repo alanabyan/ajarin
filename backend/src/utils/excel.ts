@@ -12,7 +12,7 @@ const pilihanArray = (p: unknown): string[] => (Array.isArray(p) ? p.map(String)
 const huruf = (i: number) => String.fromCharCode(65 + i);
 
 function lembar(wb: ExcelJS.Workbook, nama: string) {
-  wb.creator = 'Pelita Guru';
+  wb.creator = 'Ajarin';
   wb.created = new Date();
   return wb.addWorksheet(nama);
 }

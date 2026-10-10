@@ -1,4 +1,4 @@
-# Pelita Guru
+# Ajarin
 
 **Penerang jalan guru mengajar.** Platform untuk guru honorer: menyusun modul ajar, membuat bank soal,
 membagikannya sebagai kuis Google Form / Kahoot, lalu merekap nilai dan melihat materi yang belum dikuasai siswa.

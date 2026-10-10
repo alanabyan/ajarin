@@ -22,7 +22,7 @@ const BAGIAN: [string, string][] = [
     'Akun demo',
     'Akun demo dipakai bersama oleh banyak pengunjung dan berisi data contoh. Jangan memasukkan data asli ke akun demo.',
   ],
-  ['Kontak', 'Pertanyaan terkait privasi dapat disampaikan melalui pengelola Pelita Guru.'],
+  ['Kontak', 'Pertanyaan terkait privasi dapat disampaikan melalui pengelola Ajarin.'],
 ];
 
 export default function Privasi() {
