@@ -18,6 +18,15 @@ const JUDUL_NAMA = 'Nama lengkap';
 const JUDUL_NIS = 'NIS';
 const JUMLAH_ITEM_IDENTITAS = 2;
 
+function buatItemIdentitas(judul: string[]): unknown[] {
+  return judul.map((title, index) => ({
+    createItem: {
+      item: { title, questionItem: { question: { required: true, textQuestion: { paragraph: false } } } },
+      location: { index },
+    },
+  }));
+}
+
 export interface HasilGoogleForm {
   formId: string;
   responderUri: string; // link untuk siswa
@@ -100,12 +109,7 @@ export async function buatGoogleFormKuis(set: SoalSetForExport, accessToken: str
 
   // 2) Siapkan soal. Dua pertanyaan identitas diletakkan paling awal supaya jawaban siswa
   //    bisa dicocokkan ke daftar siswa saat hasilnya diimpor sebagai nilai.
-  const items: unknown[] = [JUDUL_NAMA, JUDUL_NIS].map((title, index) => ({
-    createItem: {
-      item: { title, questionItem: { question: { required: true, textQuestion: { paragraph: false } } } },
-      location: { index },
-    },
-  }));
+  const items: unknown[] = buatItemIdentitas([JUDUL_NAMA, JUDUL_NIS]);
   let dilewati = 0;
 
   set.soal.forEach((s) => {
@@ -274,4 +278,21 @@ export async function ambilJawabanForm(formId: string, accessToken: string): Pro
   } while (pageToken);
 
   return { jawaban: [...terbaru.values(), ...tanpaNis], adaIdentitas: Boolean(idNama && idNis) };
+}
+
+
+// Menambahkan isian Nama/NIS di awal form yang sudah ada (mis. form buatan sebelum fitur impor nilai).
+// Jawaban lama tetap tanpa identitas; hanya jawaban yang masuk setelahnya yang terisi.
+export async function tambahIdentitasForm(formId: string, accessToken: string): Promise<{ ditambahkan: string[] }> {
+  const form = await googleFetch(`${FORMS_API}/${formId}`, accessToken);
+  const ada = new Set<string>((form.items ?? []).map((i: any) => i.title));
+  const perlu = [JUDUL_NAMA, JUDUL_NIS].filter((j) => !ada.has(j));
+
+  if (perlu.length > 0) {
+    await googleFetch(`${FORMS_API}/${formId}:batchUpdate`, accessToken, {
+      includeFormInResponse: false,
+      requests: buatItemIdentitas(perlu),
+    });
+  }
+  return { ditambahkan: perlu };
 }

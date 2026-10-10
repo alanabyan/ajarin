@@ -7,6 +7,7 @@ interface BarisHasil {
   nama: string;
   nis: string;
   skor: number;
+  waktu: string;
   siswaId: string | null;
   namaSiswa: string | null;
 }
@@ -60,6 +61,41 @@ export default function ImporNilaiForm({ asesmenSetId, mapel, judul }: Props) {
   }
 
   const cocok = baris?.filter((b) => b.siswaId) ?? [];
+  const siswaKelas = kelasList.find((k) => k.id === kelasId)?.siswa ?? [];
+  const sudahDipakai = new Set(cocok.map((b) => b.siswaId));
+
+  // Guru bisa mengoreksi / mengisi pencocokan sendiri; satu siswa hanya boleh dipakai satu baris.
+  function pilihSiswa(index: number, siswaId: string) {
+    setBaris((lama) =>
+      lama
+        ? lama.map((b, i) =>
+            i === index
+              ? { ...b, siswaId: siswaId || null, namaSiswa: siswaKelas.find((s) => s.id === siswaId)?.nama ?? null }
+              : b
+          )
+        : lama
+    );
+  }
+
+  async function tambahIdentitas() {
+    setSibuk(true);
+    setError(null);
+    setPesan(null);
+    try {
+      const accessToken = await requestGoogleAccessToken();
+      const res = await client.post(`/bank-soal/${asesmenSetId}/google-form/identitas`, { accessToken });
+      setPesan(
+        res.data.ditambahkan.length > 0
+          ? 'Isian Nama dan NIS ditambahkan ke form. Jawaban yang sudah masuk tetap tanpa identitas, cocokkan manual di tabel.'
+          : 'Form ini sudah memiliki isian Nama dan NIS.'
+      );
+      setAdaIdentitas(true);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Gagal menambahkan isian.');
+    } finally {
+      setSibuk(false);
+    }
+  }
 
   async function simpan() {
     if (cocok.length === 0 || !mapelNilai.trim()) return;
@@ -102,8 +138,8 @@ export default function ImporNilaiForm({ asesmenSetId, mapel, judul }: Props) {
         </button>
       </div>
       <p className="text-ink/60">
-        Siswa dikenali dari isian Nama dan NIS di form. Form yang dibuat sebelum fitur ini tidak memilikinya,
-        sehingga siswa hanya bisa dicocokkan lewat nama kalau ada.
+        Siswa dikenali otomatis dari isian Nama dan NIS di form. Jawaban yang tidak dikenali bisa dicocokkan
+        sendiri lewat pilihan di tabel.
       </p>
 
       {kelasList.length === 0 ? (
@@ -161,9 +197,20 @@ export default function ImporNilaiForm({ asesmenSetId, mapel, judul }: Props) {
       {baris && (
         <div className="space-y-3">
           {!adaIdentitas && (
-            <p className="text-amber-700">
-              Form ini tidak punya isian Nama/NIS, jadi pencocokan mungkin tidak ada yang berhasil.
-            </p>
+            <div className="rounded-md border border-amber-200 bg-amber-50 text-amber-800 p-3 space-y-2">
+              <p>
+                Form ini belum punya isian Nama/NIS, jadi jawabannya tidak punya identitas. Pilih siswa untuk tiap
+                baris di bawah. Agar siswa berikutnya otomatis dikenali, tambahkan isiannya ke form.
+              </p>
+              <button
+                type="button"
+                onClick={tambahIdentitas}
+                disabled={sibuk}
+                className="rounded-md border border-amber-400 px-3 py-1 hover:bg-amber-100 disabled:opacity-50"
+              >
+                Tambah isian Nama &amp; NIS ke form
+              </button>
+            </div>
           )}
           {baris.length === 0 ? (
             <p className="text-ink/60">Belum ada jawaban yang masuk.</p>
@@ -173,7 +220,7 @@ export default function ImporNilaiForm({ asesmenSetId, mapel, judul }: Props) {
                 <thead>
                   <tr className="text-xs text-ink/60 border-b border-ink/10">
                     <th className="py-1 pr-3">Isian siswa</th>
-                    <th className="py-1 pr-3">Dicocokkan ke</th>
+                    <th className="py-1 pr-3">Siswa</th>
                     <th className="py-1 text-right">Skor</th>
                   </tr>
                 </thead>
@@ -181,10 +228,27 @@ export default function ImporNilaiForm({ asesmenSetId, mapel, judul }: Props) {
                   {baris.map((b, i) => (
                     <tr key={i} className="border-b border-ink/5">
                       <td className="py-1 pr-3">
-                        {b.nama || '(tanpa nama)'} {b.nis && <span className="text-ink/50">· {b.nis}</span>}
+                        {b.nama || <span className="text-ink/50">Tanpa identitas</span>}{' '}
+                        {b.nis && <span className="text-ink/50">· {b.nis}</span>}
+                        {b.waktu && (
+                          <span className="block text-xs text-ink/40">
+                            Dikirim {new Date(b.waktu).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                          </span>
+                        )}
                       </td>
-                      <td className={`py-1 pr-3 ${b.siswaId ? '' : 'text-red-600'}`}>
-                        {b.namaSiswa ?? 'Tidak cocok (dilewati)'}
+                      <td className="py-1 pr-3">
+                        <select
+                          value={b.siswaId ?? ''}
+                          onChange={(e) => pilihSiswa(i, e.target.value)}
+                          className={`rounded-md border px-2 py-1 ${b.siswaId ? 'border-ink/20' : 'border-red-300 text-red-600'}`}
+                        >
+                          <option value="">Lewati (tidak disimpan)</option>
+                          {siswaKelas.map((sw) => (
+                            <option key={sw.id} value={sw.id} disabled={sudahDipakai.has(sw.id) && sw.id !== b.siswaId}>
+                              {sw.nama} ({sw.nis})
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="py-1 text-right">{b.skor}</td>
                     </tr>

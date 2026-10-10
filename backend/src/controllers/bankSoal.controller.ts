@@ -5,7 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { generateBankSoal } from '../services/ai.service';
 import { buildSoalWorkbook } from '../utils/SoalWorkbook';
 import { buildKahootWorkbook, normalisasiWaktu } from '../utils/kahootWorkbook';
-import { buatGoogleFormKuis, ambilJawabanForm } from '../utils/googleForms';
+import { buatGoogleFormKuis, ambilJawabanForm, tambahIdentitasForm } from '../utils/googleForms';
 
 const generateSchema = z.object({
   judul: z.string().min(2),
@@ -222,6 +222,26 @@ export async function previewHasilGoogleForm(req: AuthRequest, res: Response, ne
     }
 
     res.json({ adaIdentitas, hasil });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+// Tambahkan isian Nama/NIS ke Google Form yang sudah ada untuk set soal ini.
+//   POST /bank-soal/:id/google-form/identitas   body: { accessToken }  (scope forms.body)
+export async function tambahIdentitasGoogleForm(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { accessToken } = googleFormSchema.parse(req.body);
+    const asesmenSet = await prisma.asesmenSet.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+      select: { googleFormId: true },
+    });
+    if (!asesmenSet) return res.status(404).json({ error: 'Set soal tidak ditemukan.' });
+    if (!asesmenSet.googleFormId) {
+      return res.status(400).json({ error: 'Set soal ini belum dibuatkan Google Form.' });
+    }
+    res.json(await tambahIdentitasForm(asesmenSet.googleFormId, accessToken));
   } catch (err) {
     next(err);
   }
