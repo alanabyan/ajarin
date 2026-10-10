@@ -2,8 +2,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// PostgreSQL — kompatibel dengan Supabase maupun Neon.
-// Isi DATABASE_URL di file .env sesuai provider yang dipakai.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -16,101 +14,122 @@ enum Jenjang {
   SMK
 }
 
-enum StatusDokumen {
-  DRAFT
-  FINAL
-}
-
 model User {
-  id        String   @id @default(uuid())
-  nama      String
-  email     String   @unique
-  password  String
-  jenjang   Jenjang
-  mapel     String
-  sekolah   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  nama         String
+  email        String   @unique
+  passwordHash String
+  jenjang      Jenjang
+  mapel        String
+  sekolah      String?
+  createdAt    DateTime @default(now())
 
-  modulAjar  ModulAjar[]
-  soal       Soal[]
-  asesmenSet AsesmenSet[]
-  kelasList  Kelas[]
+  kelas   Kelas[]
+  modul   Modul[]
+  setSoal SetSoal[]
 }
 
 model Kelas {
   id        String   @id @default(uuid())
-  nama      String // contoh: "8B"
-  tapel     String // tahun pelajaran, contoh: "2026/2027"
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  siswa     Siswa[]
+  nama      String
+  tapel     String
+  kkm       Int      @default(75)
   createdAt DateTime @default(now())
+  siswa     Siswa[]
+
+  @@index([userId])
 }
 
 model Siswa {
   id      String  @id @default(uuid())
-  nama    String
-  nis     String
   kelasId String
   kelas   Kelas   @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  nama    String
+  nis     String
   nilai   Nilai[]
+
+  @@unique([kelasId, nis])
 }
 
-model ModulAjar {
-  id                 String        @id @default(uuid())
-  userId             String
-  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  judul              String
-  topik              String
-  jenjang            Jenjang
-  kelas              String
-  alokasiWaktu       String
-  kondisiKelas       String?
-  tujuanPembelajaran String
-  kontenDraf         String        @db.Text
-  status             StatusDokumen @default(DRAFT)
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-}
-
-model AsesmenSet {
-  id                   String    @id @default(uuid())
-  userId               String
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  judul                String
-  mapel                String
-  kelas                String
-  createdAt            DateTime  @default(now())
-  soal                 Soal[]
-
-  googleFormId         String?
-  googleFormUrl        String? // link untuk siswa
-  googleFormEditUrl    String? // link edit untuk guru
-  googleFormDibuatPada DateTime?
-}
-
-model Soal {
-  id               String      @id @default(uuid())
-  userId           String
-  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  asesmenSetId     String?
-  asesmenSet       AsesmenSet? @relation(fields: [asesmenSetId], references: [id], onDelete: SetNull)
-  materi           String
-  tingkatKesulitan String // mudah, sedang, sulit
-  pertanyaan       String      @db.Text
-  pilihanJawaban   Json?
-  kunciJawaban     String
-  pembahasan       String?     @db.Text
-  createdAt        DateTime    @default(now())
-}
-
+// Satu siswa hanya punya satu nilai untuk kombinasi mapel + jenis + judul, sehingga
+// impor ulang hasil kuis memperbarui nilai lama dan tidak menggandakannya.
 model Nilai {
   id      String   @id @default(uuid())
   siswaId String
   siswa   Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
   mapel   String
   jenis   String // Tugas, UH, UTS, UAS
+  judul   String   @default("")
   nilai   Float
   tanggal DateTime @default(now())
+
+  @@unique([siswaId, mapel, jenis, judul])
+}
+
+model Modul {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  judul              String
+  topik              String
+  jenjang            Jenjang
+  kelas              String
+  alokasiWaktu       String
+  tujuanPembelajaran String
+  kondisiKelas       String?
+  konten             String   @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model SetSoal {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  judul     String
+  mapel     String
+  kelas     String
+  createdAt DateTime @default(now())
+  butir     Butir[]
+
+  formId       String?
+  formUrl      String?
+  formEditUrl  String?
+  formKelasId  String? // kelas yang daftar namanya dipakai di dropdown form
+  formSiswaQid String? // id pertanyaan dropdown "Pilih nama kamu" di Google Form
+  formPilihan  Json? // { "teks pilihan di dropdown": "id siswa" }
+
+  // Set remedial hanya untuk siswa tertentu (yang nilainya di bawah KKM). Kosong = seluruh kelas.
+  targetKelasId String?
+  targetSiswa   String[] @default([])
+
+  // Set remedial menunjuk set asalnya, supaya dampak remedial (nilai sebelum dan sesudah) bisa dihitung.
+  sumberId String?
+
+  // Salinan analisis butir soal saat nilai diimpor: [{ butirId, persenBenar }]. Dasar peta materi.
+  analisis   Json?
+  analisisAt DateTime?
+
+  @@index([userId, createdAt])
+}
+
+model Butir {
+  id         String  @id @default(uuid())
+  setId      String
+  set        SetSoal @relation(fields: [setId], references: [id], onDelete: Cascade)
+  urutan     Int
+  materi     String
+  tingkat    String // mudah, sedang, sulit
+  pertanyaan String  @db.Text
+  pilihan    Json // string[4]
+  kunci      Int // indeks 0-3 pada pilihan
+  pembahasan String  @db.Text
+  formQid    String? // id pertanyaan ini di Google Form
+  ragu       Boolean @default(false) // kunci jawaban tidak cocok saat diverifikasi ulang oleh AI; guru perlu memeriksa
+
+  @@index([setId])
 }

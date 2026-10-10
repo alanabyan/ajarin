@@ -1,24 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../utils/jwt';
+import { NextFunction, Request, Response } from 'express';
+import { verifyToken } from '../lib/jwt';
 
-export interface AuthRequest extends Request {
-  userId?: string;
-  userEmail?: string;
-}
-
-export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token tidak ditemukan. Silakan masuk kembali.' });
+  if (!header?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Silakan masuk terlebih dahulu.' });
   }
-
-  const token = header.split(' ')[1];
   try {
-    const payload = verifyToken(token);
-    req.userId = payload.userId;
-    req.userEmail = payload.email;
+    (req as Request & { userId: string }).userId = verifyToken(header.slice(7));
     next();
   } catch {
-    return res.status(401).json({ error: 'Sesi tidak valid atau sudah kedaluwarsa. Silakan masuk kembali.' });
+    res.status(401).json({ error: 'Sesi tidak valid atau sudah berakhir. Silakan masuk kembali.' });
   }
 }

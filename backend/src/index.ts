@@ -1,8 +1,4 @@
-import 'dotenv/config';
 import app from './app';
 
-const PORT = process.env.PORT || 4000;
-
-app.listen(PORT, () => {
-  console.log(`Server berjalan di http://localhost:${PORT}`);
-});
+const port = Number(process.env.PORT) || 4000;
+app.listen(port, () => console.log(`Pelita Guru API berjalan di http://localhost:${port}`));

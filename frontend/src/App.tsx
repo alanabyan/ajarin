@@ -1,82 +1,49 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
-import ProtectedRoute from './components/ProtectedRoute';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import Layout, { Gerbang } from './components/Layout';
+import Beranda from './pages/Beranda';
+import Dampak from './pages/Dampak';
 import Dashboard from './pages/Dashboard';
-import ModulAjarList from './pages/ModulAjarList';
-import ModulAjarGenerator from './pages/ModulAjarGenerator';
-import ModulAjarDetail from './pages/ModulAjarDetail';
-import BankSoalList from './pages/BankSoalList';
-import BankSoalGenerator from './pages/BankSoalGenerator';
-import BankSoalDetail from './pages/BankSoalDetail';
-import Kelas from './pages/Kelas';
-import PrivacyPolicy from './pages/PrivacyPolicy';
+import { Daftar, Masuk } from './pages/Akun';
+import KelasDetail from './pages/KelasDetail';
+import KelasList from './pages/KelasList';
+import RaporSiswa from './pages/RaporSiswa';
+import ModulBaru from './pages/ModulBaru';
+import ModulDetail from './pages/ModulDetail';
+import ModulList from './pages/ModulList';
+import Privasi from './pages/Privasi';
+import SoalBaru from './pages/SoalBaru';
+import SoalDetail from './pages/SoalDetail';
+import SoalList from './pages/SoalList';
 
 export default function App() {
-	return (
-		<Routes>
-			<Route
-				path="/masuk"
-				element={<Login />}
-			/>
-			<Route
-				path="/daftar"
-				element={<Register />}
-			/>
-			<Route
-				path="/privacy-policy"
-				element={<PrivacyPolicy />}
-			/>
-			<Route
-				element={
-					<ProtectedRoute>
-						<Layout />
-					</ProtectedRoute>
-				}
-			>
-				<Route
-					path="/"
-					element={<Dashboard />}
-				/>
-				<Route
-					path="/modul-ajar"
-					element={<ModulAjarList />}
-				/>
-				<Route
-					path="/modul-ajar/baru"
-					element={<ModulAjarGenerator />}
-				/>
-				<Route
-					path="/modul-ajar/:id"
-					element={<ModulAjarDetail />}
-				/>
-				<Route
-					path="/bank-soal"
-					element={<BankSoalList />}
-				/>
-				<Route
-					path="/bank-soal/baru"
-					element={<BankSoalGenerator />}
-				/>
-				<Route
-					path="/bank-soal/:id"
-					element={<BankSoalDetail />}
-				/>
-				<Route
-					path="/kelas"
-					element={<Kelas />}
-				/>
-			</Route>
-			<Route
-				path="*"
-				element={
-					<Navigate
-						to="/"
-						replace
-					/>
-				}
-			/>
-		</Routes>
-	);
+  return (
+    <Routes>
+      <Route path="/" element={<Beranda />} />
+      <Route path="/masuk" element={<Masuk />} />
+      <Route path="/daftar" element={<Daftar />} />
+      <Route path="/privasi" element={<Privasi />} />
+
+      <Route
+        element={
+          <Gerbang>
+            <Layout />
+          </Gerbang>
+        }
+      >
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dampak" element={<Dampak />} />
+        <Route path="/modul" element={<ModulList />} />
+        <Route path="/modul/baru" element={<ModulBaru />} />
+        <Route path="/modul/:id" element={<ModulDetail />} />
+        <Route path="/soal" element={<SoalList />} />
+        <Route path="/soal/baru" element={<SoalBaru />} />
+        <Route path="/soal/:id" element={<SoalDetail />} />
+        <Route path="/kelas" element={<KelasList />} />
+        <Route path="/kelas/:id" element={<KelasDetail />} />
+        <Route path="/kelas/:id/siswa/:siswaId" element={<RaporSiswa />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }
