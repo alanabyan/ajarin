@@ -124,6 +124,36 @@ function DialogKonfirmasi({ data, onClose }: { data: Konfirmasi; onClose: () => 
   );
 }
 
+function PencarianSiswa({
+  value,
+  onChange,
+  jumlah,
+  total,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  jumlah: number;
+  total: number;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <label className="block w-full sm:max-w-sm">
+        <span className="sr-only">Cari nama atau NIS siswa</span>
+        <input
+          type="search"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Cari nama atau NIS siswa"
+          className="input"
+        />
+      </label>
+      <p className="text-sm text-ink/70" aria-live="polite">
+        Menampilkan {jumlah} dari {total} siswa
+      </p>
+    </div>
+  );
+}
+
 // ---------- halaman ----------
 
 export default function Kelas() {
@@ -133,6 +163,7 @@ export default function Kelas() {
   const [tab, setTab] = useState<Tab>('rekap');
   const [rekap, setRekap] = useState<RekapRow[]>([]);
   const [mapelFilter, setMapelFilter] = useState('semua');
+  const [cariSiswa, setCariSiswa] = useState('');
   const [kkm, setKkm] = useState<number>(bacaKkm);
   const [dibuka, setDibuka] = useState<string | null>(null);
 
@@ -177,6 +208,7 @@ export default function Kelas() {
     setRekap([]);
     setTab('rekap');
     setMapelFilter('semua');
+    setCariSiswa('');
     setDibuka(null);
     setBulkNilai({});
     muatRekap(selected).catch((e) => notif('err', pesanError(e)));
@@ -204,6 +236,30 @@ export default function Kelas() {
         return { siswaId: r.siswaId, nama: r.nama, nis: r.nis, nilai, perJenis, rataRata: rata(nilai.map((n) => n.nilai)) };
       }),
     [rekap, mapelFilter]
+  );
+
+  const kueriSiswa = cariSiswa.trim().toLocaleLowerCase('id');
+  const barisDitampilkan = useMemo(
+    () =>
+      kueriSiswa
+        ? baris.filter(
+            (b) =>
+              b.nama.toLocaleLowerCase('id').includes(kueriSiswa) ||
+              b.nis.toLocaleLowerCase('id').includes(kueriSiswa)
+          )
+        : baris,
+    [baris, kueriSiswa]
+  );
+  const siswaDitampilkan = useMemo(
+    () =>
+      kueriSiswa
+        ? siswaAktif.filter(
+            (s) =>
+              s.nama.toLocaleLowerCase('id').includes(kueriSiswa) ||
+              s.nis.toLocaleLowerCase('id').includes(kueriSiswa)
+          )
+        : siswaAktif,
+    [siswaAktif, kueriSiswa]
   );
 
   const statistik = useMemo(() => {
@@ -355,7 +411,7 @@ export default function Kelas() {
       key={id}
       onClick={() => setTab(id)}
       className={`px-4 py-2 text-sm border-b-2 -mb-px ${
-        tab === id ? 'border-forest-700 text-forest-700 font-medium' : 'border-transparent text-ink/60 hover:text-ink'
+        tab === id ? 'border-forest-700 text-forest-700 font-medium' : 'border-transparent text-ink/70 hover:text-ink'
       }`}
     >
       {label}
@@ -462,28 +518,28 @@ export default function Kelas() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="bg-white rounded-lg border border-ink/10 p-3">
-                      <p className="text-xs text-ink/50">Jumlah siswa</p>
+                      <p className="text-xs text-ink/70">Jumlah siswa</p>
                       <p className="text-xl font-semibold">{statistik.jumlahSiswa}</p>
                     </div>
                     <div className="bg-white rounded-lg border border-ink/10 p-3">
-                      <p className="text-xs text-ink/50">Rata-rata kelas</p>
+                      <p className="text-xs text-ink/70">Rata-rata kelas</p>
                       <p className="text-xl font-semibold">{fmt(statistik.rataKelas)}</p>
                     </div>
                     <div className="bg-white rounded-lg border border-ink/10 p-3">
-                      <p className="text-xs text-ink/50">Tertinggi / terendah</p>
+                      <p className="text-xs text-ink/70">Tertinggi / terendah</p>
                       <p className="text-xl font-semibold">
                         {fmt(statistik.tertinggi)} <span className="text-ink/30">/</span> {fmt(statistik.terendah)}
                       </p>
                     </div>
                     <div className="bg-white rounded-lg border border-ink/10 p-3">
-                      <p className="text-xs text-ink/50">Belum tuntas (&lt; {kkm})</p>
+                      <p className="text-xs text-ink/70">Belum tuntas (&lt; {kkm})</p>
                       <p className={`text-xl font-semibold ${statistik.belumTuntas > 0 ? 'text-red-600' : ''}`}>
                         {statistik.belumTuntas}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 text-sm">
                     <label className="flex items-center gap-2">
                       <span className="text-ink/60">Mata pelajaran</span>
                       <select value={mapelFilter} onChange={(e) => setMapelFilter(e.target.value)} className="input !w-auto">
@@ -516,9 +572,16 @@ export default function Kelas() {
                       </button>
                     </div>
                   ) : (
-                    <div className="bg-white rounded-lg border border-ink/10 overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-paper text-ink/60 text-left">
+                    <div className="space-y-3">
+                      <PencarianSiswa
+                        value={cariSiswa}
+                        onChange={setCariSiswa}
+                        jumlah={barisDitampilkan.length}
+                        total={baris.length}
+                      />
+                      <div className="bg-white rounded-lg border border-ink/10 overflow-x-auto">
+                      <table className="w-full min-w-[760px] text-sm">
+                        <thead className="bg-paper text-ink/70 text-left">
                           <tr>
                             <th className="px-4 py-2 font-medium">Siswa</th>
                             {JENIS_LIST.map((j) => (
@@ -531,7 +594,7 @@ export default function Kelas() {
                           </tr>
                         </thead>
                         <tbody>
-                          {baris.map((b) => {
+                          {barisDitampilkan.map((b) => {
                             const terbuka = dibuka === b.siswaId;
                             const tuntas = b.rataRata !== null && b.rataRata >= kkm;
                             return (
@@ -543,7 +606,7 @@ export default function Kelas() {
                                   <td className="px-4 py-2">
                                     <span className="text-ink/40 mr-1">{terbuka ? '▾' : '▸'}</span>
                                     {b.nama}
-                                    <span className="block text-xs text-ink/40 pl-4">NIS {b.nis}</span>
+                                    <span className="block text-xs text-ink/60 pl-4">NIS {b.nis}</span>
                                   </td>
                                   {JENIS_LIST.map((j) => (
                                     <td key={j.kode} className="px-3 py-2 text-center text-ink/70">
@@ -551,9 +614,9 @@ export default function Kelas() {
                                     </td>
                                   ))}
                                   <td className="px-3 py-2 text-center font-semibold">{fmt(b.rataRata)}</td>
-                                  <td className="px-4 py-2">
+                                  <td className="px-4 py-2 whitespace-nowrap">
                                     {b.rataRata === null ? (
-                                      <span className="text-xs text-ink/40">Belum ada nilai</span>
+                                      <span className="text-xs text-ink/60">Belum ada nilai</span>
                                     ) : tuntas ? (
                                       <span className="rounded-full bg-forest-50 text-forest-700 text-xs font-medium px-2.5 py-0.5">
                                         Tuntas
@@ -569,7 +632,7 @@ export default function Kelas() {
                                   <tr className="bg-paper/50">
                                     <td colSpan={7} className="px-4 py-3">
                                       {b.nilai.length === 0 ? (
-                                        <p className="text-sm text-ink/50">Belum ada nilai untuk filter ini.</p>
+                                        <p className="text-sm text-ink/70">Belum ada nilai untuk filter ini.</p>
                                       ) : (
                                         <table className="w-full text-xs">
                                           <thead className="text-ink/50 text-left">
@@ -616,12 +679,20 @@ export default function Kelas() {
                               </Fragment>
                             );
                           })}
+                          {barisDitampilkan.length === 0 && (
+                            <tr>
+                              <td colSpan={7} className="px-4 py-8 text-center text-sm text-ink/70">
+                                Tidak ada siswa yang cocok dengan “{cariSiswa}”.
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </div>
+                    </div>
                   )}
 
-                  <p className="text-xs text-ink/50">
+                  <p className="text-xs text-ink/70">
                     Kolom Tugas/UH/UTS/UAS menampilkan rata-rata tiap jenis. Rata-rata adalah rata-rata seluruh nilai
                     siswa{mapelFilter === 'semua' ? '' : ` pada ${mapelFilter}`}. Siswa tuntas jika rata-rata ≥ KKM.
                     {statistik.belumAdaNilai > 0 && ` ${statistik.belumAdaNilai} siswa belum punya nilai.`} Klik baris siswa
@@ -764,9 +835,16 @@ export default function Kelas() {
                       Belum ada siswa di kelas ini.
                     </div>
                   ) : (
-                    <div className="bg-white rounded-lg border border-ink/10 overflow-hidden">
-                      <table className="w-full text-sm">
-                        <thead className="bg-paper text-ink/60 text-left">
+                    <div className="space-y-3">
+                      <PencarianSiswa
+                        value={cariSiswa}
+                        onChange={setCariSiswa}
+                        jumlah={siswaDitampilkan.length}
+                        total={siswaAktif.length}
+                      />
+                      <div className="bg-white rounded-lg border border-ink/10 overflow-x-auto">
+                      <table className="w-full min-w-[560px] text-sm">
+                        <thead className="bg-paper text-ink/70 text-left">
                           <tr>
                             <th className="px-4 py-2 font-medium w-10">No</th>
                             <th className="px-4 py-2 font-medium">Nama</th>
@@ -775,9 +853,9 @@ export default function Kelas() {
                           </tr>
                         </thead>
                         <tbody>
-                          {siswaAktif.map((s, i) => (
+                          {siswaDitampilkan.map((s, i) => (
                             <tr key={s.id} className="border-t border-ink/10">
-                              <td className="px-4 py-2 text-ink/40">{i + 1}</td>
+                              <td className="px-4 py-2 text-ink/70">{i + 1}</td>
                               <td className="px-4 py-2">{s.nama}</td>
                               <td className="px-4 py-2 text-ink/60">{s.nis}</td>
                               <td className="px-4 py-2 text-right">
@@ -787,8 +865,16 @@ export default function Kelas() {
                               </td>
                             </tr>
                           ))}
+                          {siswaDitampilkan.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="px-4 py-8 text-center text-sm text-ink/70">
+                                Tidak ada siswa yang cocok dengan “{cariSiswa}”.
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
+                    </div>
                     </div>
                   )}
                 </div>

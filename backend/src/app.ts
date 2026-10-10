@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import authRoutes from './routes/auth.routes';
 import modulAjarRoutes from './routes/modulAjar.routes';
 import bankSoalRoutes from './routes/bankSoal.routes';
@@ -9,11 +10,15 @@ import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
 
+// Di belakang proxy Vercel; dibutuhkan agar rate limit membaca IP klien yang benar.
+app.set('trust proxy', 1);
+app.use(helmet());
+
 app.use(cors({ 
   origin: [
     'http://localhost:5173', 
     'https://ajarin-self.vercel.app',
-    process.env.CLIENT_URL || ''
+    ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : []),
   ],
   credentials: true
 }));
