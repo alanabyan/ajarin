@@ -9,6 +9,7 @@ import {
   remove,
   exportXlsx,
   createGoogleForm,
+  previewHasilGoogleForm,
 } from '../controllers/bankSoal.controller';
 
 const router = Router();
@@ -19,6 +20,7 @@ router.get('/', list);
 router.get('/:id', getOne);
 router.get('/:id/export', exportXlsx);
 router.post('/:id/google-form', createGoogleForm);
+router.post('/:id/google-form/hasil', previewHasilGoogleForm);
 router.delete('/:id', remove);
 
 export default router;

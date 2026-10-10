@@ -4,6 +4,7 @@ import client from '../api/client';
 import { loadGoogleIdentity, requestGoogleAccessToken } from '../api/googleAuth';
 import { AsesmenSet } from '../types';
 import MathText from '../components/MathText';
+import ImporNilaiForm from '../components/ImporNilaiForm';
 
 type FormatEkspor = 'kahoot' | 'lengkap';
 
@@ -194,6 +195,8 @@ export default function BankSoalDetail() {
           )}
         </div>
       )}
+
+      {set.googleFormId && <ImporNilaiForm asesmenSetId={set.id} mapel={set.mapel} judul={set.judul} />}
 
       <div className="space-y-4">
         {set.soal.map((s, i) => (

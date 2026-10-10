@@ -12,6 +12,12 @@ import type { SoalSetForExport } from './SoalWorkbook';
 const FORMS_API = 'https://forms.googleapis.com/v1/forms';
 const DRIVE_API = 'https://www.googleapis.com/drive/v3/files';
 
+// Judul dua pertanyaan identitas yang disisipkan di form buatan Ajarin; juga dipakai untuk
+// mengenalinya kembali saat membaca jawaban.
+const JUDUL_NAMA = 'Nama lengkap';
+const JUDUL_NIS = 'NIS';
+const JUMLAH_ITEM_IDENTITAS = 2;
+
 export interface HasilGoogleForm {
   formId: string;
   responderUri: string; // link untuk siswa
@@ -92,8 +98,14 @@ export async function buatGoogleFormKuis(set: SoalSetForExport, accessToken: str
   const formId: string = form.formId;
   const editUrl = `https://docs.google.com/forms/d/${formId}/edit`;
 
-  // 2) Siapkan soal.
-  const items: unknown[] = [];
+  // 2) Siapkan soal. Dua pertanyaan identitas diletakkan paling awal supaya jawaban siswa
+  //    bisa dicocokkan ke daftar siswa saat hasilnya diimpor sebagai nilai.
+  const items: unknown[] = [JUDUL_NAMA, JUDUL_NIS].map((title, index) => ({
+    createItem: {
+      item: { title, questionItem: { question: { required: true, textQuestion: { paragraph: false } } } },
+      location: { index },
+    },
+  }));
   let dilewati = 0;
 
   set.soal.forEach((s) => {
@@ -138,7 +150,7 @@ export async function buatGoogleFormKuis(set: SoalSetForExport, accessToken: str
     });
   });
 
-  if (items.length === 0) {
+  if (items.length === JUMLAH_ITEM_IDENTITAS) {
     throw new GoogleApiError('Tidak ada soal yang valid untuk dimasukkan ke Google Form.', 422);
   }
 
@@ -194,9 +206,72 @@ export async function buatGoogleFormKuis(set: SoalSetForExport, accessToken: str
     formId,
     responderUri: form.responderUri ?? `https://docs.google.com/forms/d/${formId}/viewform`,
     editUrl,
-    jumlahSoal: items.length,
+    jumlahSoal: items.length - JUMLAH_ITEM_IDENTITAS,
     soalDilewati: dilewati,
     dipublikasi: true,
     bisaDiisiSiapaSaja,
   };
+}
+
+export interface JawabanForm {
+  nama: string;
+  nis: string;
+  skor: number; // skala 0-100
+  waktu: string;
+}
+
+export interface HasilJawabanForm {
+  jawaban: JawabanForm[];
+  adaIdentitas: boolean; // false = form lama tanpa pertanyaan Nama/NIS
+}
+
+// Membaca jawaban siswa dari Google Form kuis dan mengubah skornya ke skala 0-100.
+// Satu siswa (NIS sama) yang mengisi berkali-kali hanya dihitung jawaban terbarunya.
+export async function ambilJawabanForm(formId: string, accessToken: string): Promise<HasilJawabanForm> {
+  const form = await googleFetch(`${FORMS_API}/${formId}`, accessToken);
+
+  let skorMaks = 0;
+  let idNama = '';
+  let idNis = '';
+  for (const item of form.items ?? []) {
+    const q = item.questionItem?.question;
+    if (!q) continue;
+    skorMaks += q.grading?.pointValue ?? 0;
+    if (item.title === JUDUL_NAMA) idNama = q.questionId;
+    if (item.title === JUDUL_NIS) idNis = q.questionId;
+  }
+
+  if (skorMaks <= 0) {
+    throw new GoogleApiError('Form ini tidak memiliki soal bernilai, jadi skor tidak bisa dihitung.', 422);
+  }
+
+  const terbaru = new Map<string, JawabanForm>();
+  const tanpaNis: JawabanForm[] = [];
+  let pageToken = '';
+
+  do {
+    const url = `${FORMS_API}/${formId}/responses${pageToken ? `?pageToken=${encodeURIComponent(pageToken)}` : ''}`;
+    const data = await googleFetch(url, accessToken);
+
+    for (const r of data?.responses ?? []) {
+      if (typeof r.totalScore !== 'number') continue;
+      const teks = (id: string): string => r.answers?.[id]?.textAnswers?.answers?.[0]?.value?.trim() ?? '';
+      const item: JawabanForm = {
+        nama: idNama ? teks(idNama) : '',
+        nis: idNis ? teks(idNis) : '',
+        skor: Math.round((r.totalScore / skorMaks) * 1000) / 10,
+        waktu: r.lastSubmittedTime ?? r.createTime ?? '',
+      };
+
+      if (!item.nis) {
+        tanpaNis.push(item);
+        continue;
+      }
+      const lama = terbaru.get(item.nis);
+      if (!lama || item.waktu > lama.waktu) terbaru.set(item.nis, item);
+    }
+    pageToken = data?.nextPageToken ?? '';
+  } while (pageToken);
+
+  return { jawaban: [...terbaru.values(), ...tanpaNis], adaIdentitas: Boolean(idNama && idNis) };
 }

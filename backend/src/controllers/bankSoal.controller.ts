@@ -5,7 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { generateBankSoal } from '../services/ai.service';
 import { buildSoalWorkbook } from '../utils/SoalWorkbook';
 import { buildKahootWorkbook, normalisasiWaktu } from '../utils/kahootWorkbook';
-import { buatGoogleFormKuis } from '../utils/googleForms';
+import { buatGoogleFormKuis, ambilJawabanForm } from '../utils/googleForms';
 
 const generateSchema = z.object({
   judul: z.string().min(2),
@@ -167,6 +167,61 @@ export async function createGoogleForm(req: AuthRequest, res: Response, next: Ne
     }
 
     res.status(201).json({ ...hasil, dibuatPada });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Ambil jawaban siswa dari Google Form set soal ini dan cocokkan ke siswa di satu kelas.
+//   POST /bank-soal/:id/google-form/hasil   body: { accessToken, kelasId }
+// Hanya pratinjau: tidak ada yang disimpan. Guru memeriksa hasilnya lalu menyimpannya lewat
+// POST /nilai/batch. Pencocokan lewat NIS; kalau NIS tidak ada, lewat nama (tanpa beda huruf besar/kecil).
+const hasilFormSchema = z.object({ accessToken: z.string().min(20), kelasId: z.string().uuid() });
+
+const normNama = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+
+export async function previewHasilGoogleForm(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { accessToken, kelasId } = hasilFormSchema.parse(req.body);
+
+    const asesmenSet = await prisma.asesmenSet.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+      select: { googleFormId: true },
+    });
+    if (!asesmenSet) return res.status(404).json({ error: 'Set soal tidak ditemukan.' });
+    if (!asesmenSet.googleFormId) {
+      return res.status(400).json({ error: 'Set soal ini belum dibuatkan Google Form.' });
+    }
+
+    const kelas = await prisma.kelas.findFirst({
+      where: { id: kelasId, userId: req.userId },
+      include: { siswa: true },
+    });
+    if (!kelas) return res.status(404).json({ error: 'Kelas tidak ditemukan.' });
+
+    const { jawaban, adaIdentitas } = await ambilJawabanForm(asesmenSet.googleFormId, accessToken);
+
+    const perNis = new Map(kelas.siswa.map((s) => [s.nis.trim(), s]));
+    const perNama = new Map(kelas.siswa.map((s) => [normNama(s.nama), s]));
+
+    const hasil = jawaban.map((j) => {
+      const siswa = (j.nis && perNis.get(j.nis)) || perNama.get(normNama(j.nama)) || null;
+      return { nama: j.nama, nis: j.nis, skor: j.skor, waktu: j.waktu, siswaId: siswa?.id ?? null, namaSiswa: siswa?.nama ?? null };
+    });
+
+    // Dua jawaban yang cocok ke siswa yang sama (mis. NIS salah ketik) ditandai agar tidak tersimpan ganda.
+    const dipakai = new Set<string>();
+    for (const h of hasil) {
+      if (!h.siswaId) continue;
+      if (dipakai.has(h.siswaId)) {
+        h.siswaId = null;
+        h.namaSiswa = null;
+      } else {
+        dipakai.add(h.siswaId);
+      }
+    }
+
+    res.json({ adaIdentitas, hasil });
   } catch (err) {
     next(err);
   }

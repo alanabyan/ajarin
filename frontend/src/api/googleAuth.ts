@@ -7,6 +7,8 @@ const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 // drive.file   : (opsional) mengizinkan "siapa saja yang punya link" mengisi form
 const SCOPE_FORMS = 'https://www.googleapis.com/auth/forms.body';
 const SCOPE_DRIVE = 'https://www.googleapis.com/auth/drive.file';
+// forms.responses.readonly : membaca jawaban siswa untuk diimpor sebagai nilai
+const SCOPE_RESPONSES = 'https://www.googleapis.com/auth/forms.responses.readonly';
 
 let gsiPromise: Promise<void> | null = null;
 
@@ -30,7 +32,8 @@ export function loadGoogleIdentity(): Promise<void> {
   return gsiPromise;
 }
 
-export function requestGoogleAccessToken(): Promise<string> {
+// bacaJawaban = true meminta izin tambahan untuk membaca jawaban form (impor nilai).
+export function requestGoogleAccessToken(bacaJawaban = false): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!CLIENT_ID) {
       return reject(new Error('VITE_GOOGLE_CLIENT_ID belum diatur di file .env frontend.'));
@@ -42,7 +45,7 @@ export function requestGoogleAccessToken(): Promise<string> {
 
     const client = oauth2.initTokenClient({
       client_id: CLIENT_ID,
-      scope: `${SCOPE_FORMS} ${SCOPE_DRIVE}`,
+      scope: bacaJawaban ? `${SCOPE_FORMS} ${SCOPE_RESPONSES}` : `${SCOPE_FORMS} ${SCOPE_DRIVE}`,
       callback: (resp: any) => {
         if (resp.error) {
           return reject(new Error(resp.error_description || resp.error));
@@ -50,6 +53,9 @@ export function requestGoogleAccessToken(): Promise<string> {
         // Pengguna bisa menghapus centang izin satu per satu; izin Forms wajib ada.
         if (!oauth2.hasGrantedAllScopes(resp, SCOPE_FORMS)) {
           return reject(new Error('Izin Google Forms tidak diberikan. Centang izin yang diminta lalu coba lagi.'));
+        }
+        if (bacaJawaban && !oauth2.hasGrantedAllScopes(resp, SCOPE_RESPONSES)) {
+          return reject(new Error('Izin membaca jawaban Google Forms tidak diberikan. Centang izin lalu coba lagi.'));
         }
         resolve(resp.access_token);
       },
