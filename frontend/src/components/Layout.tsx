@@ -3,6 +3,7 @@ import { Navigate, NavLink, Outlet, useLocation, useNavigate, useSearchParams } 
 import { useAuth } from '../lib/auth';
 import { offline } from '../lib/api';
 import { useJaringan } from '../lib/offline/jaringan';
+import PanduanTur, { tandaiTurDilihat, turSudahDilihat } from './PanduanTur';
 import { BannerStatus, PanelOffline } from './StatusOffline';
 import { Ikon, Logo, Memuat } from './ui';
 
@@ -45,7 +46,7 @@ function KolomCari() {
   }
 
   return (
-    <form onSubmit={kirim} role="search" className="relative min-w-0 flex-1 sm:max-w-md">
+    <form onSubmit={kirim} role="search" data-tour="cari" className="relative min-w-0 flex-1 sm:max-w-md">
       <Ikon nama="cari" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-tinta-300" />
       <input
         type="search"
@@ -64,8 +65,21 @@ export default function Layout() {
   const [terbuka, setTerbuka] = useState(false);
   const { pathname } = useLocation();
   const { online } = useJaringan();
+  const [tur, setTur] = useState(false);
 
   useEffect(() => setTerbuka(false), [pathname]);
+
+  // Tur fitur muncul otomatis sekali per akun, saat pertama kali membuka beranda dashboard.
+  useEffect(() => {
+    if (!user || pathname !== '/dashboard' || turSudahDilihat(user.id)) return;
+    const t = window.setTimeout(() => setTur(true), 800);
+    return () => window.clearTimeout(t);
+  }, [user?.id, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function tutupTur() {
+    if (user) tandaiTurDilihat(user.id);
+    setTur(false);
+  }
 
   // Menyiapkan data offline di latar belakang setiap kali guru masuk atau koneksi kembali (dibatasi tiap 15 menit).
   useEffect(() => {
@@ -112,6 +126,7 @@ export default function Layout() {
             <NavLink
               key={m.ke}
               to={m.ke}
+              data-tour={`menu-${m.ikon}`}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-[21px] px-5 py-2.5 text-base transition-colors ${
                   isActive ? 'bg-white font-semibold text-ajarin-500' : 'font-semibold text-white hover:bg-white/15'
@@ -125,7 +140,9 @@ export default function Layout() {
         </nav>
 
         <div className="mt-auto pt-6">
-          <PanelOffline />
+          <div data-tour="offline">
+            <PanelOffline />
+          </div>
           <div className="overflow-hidden rounded-[14px] bg-white pt-5 text-ajarin-500">
             <div className="px-4 pb-3">
               <p className="text-xl font-bold leading-tight">Sudah selesai?</p>
@@ -161,8 +178,18 @@ export default function Layout() {
               <Ikon nama="menu" />
             </button>
             <KolomCari />
+            <button
+              type="button"
+              data-tour="panduan"
+              onClick={() => setTur(true)}
+              aria-label="Buka panduan fitur"
+              title="Panduan fitur"
+              className="ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-tinta-100 text-lg font-bold text-ajarin-600 transition-colors hover:bg-ajarin-50"
+            >
+              ?
+            </button>
             <div
-              className="ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ajarin-100 text-sm font-bold text-ajarin-700"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ajarin-100 text-sm font-bold text-ajarin-700"
               title={user?.nama}
               role="img"
               aria-label={`Akun ${user?.nama ?? ''}`}
@@ -176,6 +203,7 @@ export default function Layout() {
           </main>
         </div>
       </div>
+      <PanduanTur buka={tur} onTutup={tutupTur} onBukaMenu={setTerbuka} />
     </div>
   );
 }
