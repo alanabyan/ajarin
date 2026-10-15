@@ -2,6 +2,8 @@ import { prisma } from '../lib/db';
 import { HttpError } from '../lib/http';
 import { normNis } from '../utils/nis';
 
+export const BATAS_UAS = 2;
+
 export interface ItemNilai {
   siswaId?: string;
   siswaBaru?: { nama: string; nis: string };
@@ -21,6 +23,24 @@ export async function simpanNilaiKelas(
 ) {
   const kelas = await prisma.kelas.findFirst({ where: { id: kelasId, userId }, include: { siswa: true } });
   if (!kelas) throw new HttpError(404, 'Kelas tidak ditemukan.');
+
+  // UAS paling banyak 2 kali per mata pelajaran di satu kelas (semester ganjil dan genap).
+  // Menyimpan ulang UAS yang sudah ada (judul sama) tetap boleh, karena hanya memperbarui nilainya.
+  if (jenis === 'UAS') {
+    const ada = await prisma.nilai.findMany({
+      where: { jenis: 'UAS', mapel, siswa: { kelasId } },
+      distinct: ['judul'],
+      select: { judul: true },
+    });
+    const judulAda = ada.map((n) => n.judul);
+    if (!judulAda.includes(judul) && judulAda.length >= BATAS_UAS) {
+      const daftar = judulAda.map((j) => `"${j || 'tanpa judul'}"`).join(' dan ');
+      throw new HttpError(
+        400,
+        `UAS ${mapel} di kelas ini sudah ${BATAS_UAS} kali (${daftar}). Maksimal ${BATAS_UAS} UAS per mata pelajaran; pakai judul UAS yang sudah ada untuk memperbarui nilainya.`
+      );
+    }
+  }
 
   const idKelas = new Set(kelas.siswa.map((s) => s.id));
   const perNis = new Map(kelas.siswa.map((s) => [normNis(s.nis), s]));

@@ -27,6 +27,8 @@ export interface DataSet {
   id: string;
   judul: string;
   sumberId: string | null;
+  /** Kelas yang mengerjakan set ini lewat Google Form; analisis butirnya berasal dari kelas ini. */
+  formKelasId: string | null;
   targetKelasId: string | null;
   targetSiswa: string[];
   /** Salinan analisis butir saat impor nilai: [{ butirId, persenBenar }]. */
@@ -43,9 +45,16 @@ const rata = (v: number[]): number | null => (v.length ? v.reduce((t, n) => t + 
 const bulat = (n: number | null, d = 1): number | null => (n === null ? null : Math.round(n * 10 ** d) / 10 ** d);
 const labelPenilaian = (n: { jenis: string; judul: string }) => `${n.jenis}${n.judul ? `: ${n.judul}` : ''}`;
 
-export function hitungDampak(kelas: DataKelas[], sets: DataSet[]) {
-  const perId = new Map(sets.map((s) => [s.id, s]));
-  const judulRemedial = new Set(sets.filter((s) => s.sumberId).map((s) => s.judul));
+/**
+ * `kelasId` diisi untuk analisis satu kelas: tren, ringkasan, dan siswa hanya dari kelas itu; peta materi hanya dari
+ * set soal yang dikerjakan kelas itu; remedial hanya yang ditujukan ke kelas itu. Kosong = gabungan semua kelas.
+ */
+export function hitungDampak(semuaKelas: DataKelas[], semuaSet: DataSet[], kelasId?: string) {
+  const kelas = kelasId ? semuaKelas.filter((k) => k.id === kelasId) : semuaKelas;
+  // Set asal remedial tetap dicari dari semua set, karena judulnya dipakai untuk memasangkan nilai sebelum/sesudah.
+  const perId = new Map(semuaSet.map((s) => [s.id, s]));
+  const sets = kelasId ? semuaSet.filter((s) => s.formKelasId === kelasId || s.targetKelasId === kelasId) : semuaSet;
+  const judulRemedial = new Set(semuaSet.filter((s) => s.sumberId).map((s) => s.judul));
 
   // 1. Tren nilai tiap kelas: rata-rata kelas per penilaian, urut tanggal. Penilaian remedial dikeluarkan
   //    karena hanya diikuti sebagian siswa dan akan menyeret rata-rata.

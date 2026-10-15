@@ -1,8 +1,8 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Header, Kosong, Memuat, Pesan, angka } from '../components/ui';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Header, Kosong, Memuat, Pesan, SelectPil, angka } from '../components/ui';
 import api, { pesanError } from '../lib/api';
-import type { Dampak as DataDampak, StatusMateri, TitikTren } from '../types';
+import type { Dampak as DataDampak, KelasRingkas, StatusMateri, TitikTren } from '../types';
 
 // Status selalu disertai label teks, jadi tidak bergantung pada warna saja.
 const WARNA_STATUS: Record<StatusMateri, { bar: string; lencana: string; label: string }> = {
@@ -94,15 +94,52 @@ function Bagian({ judul, catatan, children, lebar = false }: { judul: string; ca
 export default function Dampak() {
   const [d, setD] = useState<DataDampak | null>(null);
   const [galat, setGalat] = useState('');
+  const [daftarKelas, setDaftarKelas] = useState<KelasRingkas[]>([]);
+  // Kelas yang dianalisis disimpan di URL (?kelas=) supaya bisa dibagikan / dibuka ulang; kosong = semua kelas.
+  const [sp, setSp] = useSearchParams();
+  const kelasId = sp.get('kelas') ?? '';
 
   useEffect(() => {
     api
-      .get('/dampak')
-      .then((r) => setD(r.data))
-      .catch((e) => setGalat(pesanError(e, 'Gagal memuat data dampak.')));
+      .get('/kelas')
+      .then((r) => setDaftarKelas(r.data.kelas))
+      .catch(() => setDaftarKelas([]));
   }, []);
 
-  if (!d) return galat ? <Pesan nada="galat">{galat}</Pesan> : <Memuat />;
+  useEffect(() => {
+    setD(null);
+    setGalat('');
+    api
+      .get('/dampak', { params: kelasId ? { kelasId } : undefined })
+      .then((r) => setD(r.data))
+      .catch((e) => setGalat(pesanError(e, 'Gagal memuat data dampak.')));
+  }, [kelasId]);
+
+  const kelasDipilih = daftarKelas.find((k) => k.id === kelasId);
+  const pilihKelas = (
+    <SelectPil
+      aria-label="Kelas yang dianalisis"
+      className="sm:w-64"
+      value={kelasId}
+      onChange={(e) => setSp(e.target.value ? { kelas: e.target.value } : {}, { replace: true })}
+    >
+      <option value="">Semua kelas</option>
+      {daftarKelas.map((k) => (
+        <option key={k.id} value={k.id}>
+          Kelas {k.nama} · {k.tapel}
+        </option>
+      ))}
+    </SelectPil>
+  );
+
+  if (!d) {
+    return (
+      <div>
+        <Header bertumpuk judul="Dampak & Peta Belajar" aksi={pilihKelas} />
+        {galat ? <Pesan nada="galat">{galat}</Pesan> : <Memuat />}
+      </div>
+    );
+  }
 
   const { ringkasan: r, remedial } = d;
   const t = remedial.total;
@@ -111,22 +148,30 @@ export default function Dampak() {
   return (
     <div>
       <Header
-        judul="Dampak & Peta Belajar"
-        deskripsi="Bukti perkembangan belajar siswa dari nilai dan hasil kuis yang sudah Anda catat."
+        bertumpuk
+        judul={kelasDipilih ? `Dampak & Peta Belajar · Kelas ${kelasDipilih.nama}` : 'Dampak & Peta Belajar'}
+        deskripsi={
+          kelasDipilih
+            ? `Analisis khusus kelas ${kelasDipilih.nama} (${kelasDipilih.tapel}): nilai, hasil kuis, dan remedial kelas ini saja.`
+            : 'Bukti perkembangan belajar siswa dari nilai dan hasil kuis yang sudah Anda catat, gabungan semua kelas.'
+        }
         aksi={
-          <button type="button" onClick={() => window.print()} className="btn-garis">
-            Cetak / PDF
-          </button>
+          <>
+            {pilihKelas}
+            <button type="button" onClick={() => window.print()} className="btn-garis">
+              Cetak / PDF
+            </button>
+          </>
         }
       />
 
       {r.siswaBerNilai === 0 ? (
         <Kosong
-          judul="Belum ada nilai untuk dianalisis"
+          judul={kelasDipilih ? `Kelas ${kelasDipilih.nama} belum punya nilai` : 'Belum ada nilai untuk dianalisis'}
           isi="Catat nilai di menu Kelas & Nilai, atau impor hasil kuis Google Form dari Bank Soal. Halaman ini terisi otomatis setelah itu."
           aksi={
-            <Link to="/kelas" className="btn-utama">
-              Buka Kelas & Nilai
+            <Link to={kelasDipilih ? `/kelas/${kelasDipilih.id}` : '/kelas'} className="btn-utama">
+              {kelasDipilih ? `Buka Kelas ${kelasDipilih.nama}` : 'Buka Kelas & Nilai'}
             </Link>
           }
         />
@@ -250,7 +295,7 @@ export default function Dampak() {
                       >
                         {p.nama}
                       </Link>{' '}
-                      <span className="text-tinta-300">· kelas {p.kelasNama}</span>
+                      {!kelasDipilih && <span className="text-tinta-300">· kelas {p.kelasNama}</span>}
                       <ul className="mt-0.5 list-disc pl-5 text-tinta-700">
                         {p.alasan.map((a) => (
                           <li key={a}>{a}</li>

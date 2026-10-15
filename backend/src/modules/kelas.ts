@@ -98,11 +98,14 @@ router.patch(
   '/:id',
   handle(async (req, res) => {
     const lama = await milik(req.params.id, uid(req));
-    const { tapel, kkm } = z.object({ tapel: tapelSchema.optional(), kkm: kkmSchema.optional() }).parse(req.body);
+    if (req.body?.kkm !== undefined && req.body.kkm !== lama.kkm) {
+      throw new HttpError(400, 'KKM ditetapkan saat kelas dibuat dan tidak bisa diubah.', { kolom: { kkm: 'KKM tidak bisa diubah.' } });
+    }
+    const { tapel } = z.object({ tapel: tapelSchema.optional() }).parse(req.body);
     // Identitas hanya diubah bila tingkat dikirim; jurusan/rombel yang tidak dikirim dianggap dikosongkan.
     const id = req.body?.tingkat !== undefined ? identitas(identitasSchema.parse(req.body)) : null;
     await tolakGanda(uid(req), id?.nama ?? lama.nama, tapel ?? lama.tapel, lama.id);
-    const kelas = await prisma.kelas.update({ where: { id: lama.id }, data: { ...id, tapel, kkm } });
+    const kelas = await prisma.kelas.update({ where: { id: lama.id }, data: { ...id, tapel } });
     res.json({ kelas });
   })
 );
@@ -158,6 +161,16 @@ router.post(
     });
     if (baru.length) await prisma.siswa.createMany({ data: baru.map((s) => ({ ...s, kelasId: kelas.id })) });
     res.status(201).json({ ditambahkan: baru.length, dilewati: siswa.length - baru.length });
+  })
+);
+
+// Hapus banyak siswa sekaligus (mis. salah impor). Hanya siswa di kelas milik guru ini yang terhapus.
+router.post(
+  '/siswa/hapus',
+  handle(async (req, res) => {
+    const { ids } = z.object({ ids: z.array(z.string().uuid()).min(1, 'Pilih minimal satu siswa.').max(500) }).parse(req.body);
+    const { count } = await prisma.siswa.deleteMany({ where: { id: { in: ids }, kelas: { userId: uid(req) } } });
+    res.json({ dihapus: count });
   })
 );
 

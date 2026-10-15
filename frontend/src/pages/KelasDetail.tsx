@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 're
 import { Link, useParams } from 'react-router-dom';
 import { Kosong, Memuat, Pesan, SelectPil, TombolKembali } from '../components/ui';
 import { NAMA_ORANG, NIS_VALID } from '../lib/akademik';
+import { BilahTerpilih, Centang, CentangSemua, usePilihan } from '../components/PilihSiswa';
 import api, { pesanError, unduh } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { bacaBerkasSiswa, unduhTemplatSiswa, type SiswaBaru } from '../lib/berkasSiswa';
@@ -17,6 +18,20 @@ const satuDesimal = (n: number | null | undefined): string =>
 
 // Nama kolom rekap berbentuk "UH: Bab 3 (Matematika)"; mata pelajaran ada di dalam kurung terakhir.
 const mapelDariKolom = (kolom: string): string => /\(([^()]*)\)$/.exec(kolom)?.[1] ?? '';
+
+// UAS paling banyak 2 kali per mata pelajaran di satu kelas (semester ganjil dan genap); server memeriksa hal yang sama.
+const BATAS_UAS = 2;
+
+/** Judul UAS yang sudah tercatat untuk satu mapel, dari nama kolom rekap "UAS: Judul (Mapel)" atau "UAS (Mapel)". */
+function judulUas(kolom: string[], mapel: string): string[] {
+  return kolom.flatMap((k) => {
+    const m = /^UAS(?:: (.*))? \(([^()]*)\)$/.exec(k);
+    return m && m[2] === mapel ? [m[1] ?? ''] : [];
+  });
+}
+
+/** Nilai yang boleh diketik: kosong, atau angka 0-100 dengan paling banyak 2 desimal. */
+const nilaiBolehDiketik = (v: string) => v === '' || (/^\d{1,3}([.,]\d{0,2})?$/.test(v) && Number(v.replace(',', '.')) <= 100);
 
 // Satu baris per siswa: "Nama, NIS" (hasil tempel dari spreadsheet juga bisa dipisah tab atau titik koma).
 function parseSiswa(teks: string): { nama: string; nis: string }[] {
@@ -38,6 +53,8 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
   const [galat, setGalat] = useState('');
   const [info, setInfo] = useState('');
   const [berkas, setBerkas] = useState<{ nama: string; siswa: SiswaBaru[]; dilewati: number } | null>(null);
+  const pilihan = usePilihan(siswa.map((s) => s.id));
+  const [menghapus, setMenghapus] = useState(false);
   const [sibuk, setSibuk] = useState(false);
   const inputBerkas = useRef<HTMLInputElement>(null);
   // Berkas yang sudah dibaca menggantikan isian teks.
@@ -110,6 +127,24 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
       await muat();
     } catch (e) {
       setGalat(pesanError(e));
+    }
+  }
+
+  async function hapusTerpilih() {
+    const n = pilihan.jumlah;
+    if (!window.confirm(`Hapus ${n} siswa terpilih beserta seluruh nilainya? Tindakan ini tidak bisa dibatalkan.`)) return;
+    setMenghapus(true);
+    setGalat('');
+    setInfo('');
+    try {
+      const r = await api.post('/kelas/siswa/hapus', { ids: [...pilihan.terpilih] });
+      pilihan.kosongkan();
+      setInfo(`${r.data.dihapus} siswa dihapus.`);
+      await muat();
+    } catch (e) {
+      setGalat(pesanError(e, 'Gagal menghapus siswa.'));
+    } finally {
+      setMenghapus(false);
     }
   }
 
@@ -210,10 +245,14 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
             {info && <Pesan nada="sukses">{info}</Pesan>}
           </div>
         )}
+        <BilahTerpilih jumlah={pilihan.jumlah} sibuk={menghapus} onHapus={hapusTerpilih} onBatal={pilihan.kosongkan} />
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[520px]">
             <thead>
               <tr className={KEPALA_TABEL}>
+                <th className="w-10 px-3 py-3.5">
+                  {siswa.length > 0 && <CentangSemua semua={pilihan.semua} sebagian={pilihan.sebagian} onChange={pilihan.ubahSemua} label="Pilih semua siswa" />}
+                </th>
                 <th className="w-16 px-3 py-3.5">No</th>
                 <th className="px-3 py-3.5">Nama Siswa</th>
                 <th className="px-3 py-3.5 text-center">NIS</th>
@@ -222,7 +261,10 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
             </thead>
             <tbody className="text-sm font-medium text-tinta-400">
               {siswa.map((s, i) => (
-                <tr key={s.id} className={BARIS_TABEL}>
+                <tr key={s.id} className={`${BARIS_TABEL} ${pilihan.ada(s.id) ? 'bg-ajarin-50' : ''}`}>
+                  <td className="px-3 py-3">
+                    <Centang checked={pilihan.ada(s.id)} onChange={() => pilihan.ubah(s.id)} label={`Pilih ${s.nama}`} />
+                  </td>
                   <td className="px-3 py-3">{i + 1}</td>
                   <td className="px-3 py-3">{s.nama}</td>
                   <td className="px-3 py-3 text-center tabular-nums">{s.nis}</td>
@@ -235,7 +277,7 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
               ))}
               {siswa.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-6 text-center text-tinta-500">
+                  <td colSpan={5} className="px-3 py-6 text-center text-tinta-500">
                     Belum ada siswa. Tambahkan lewat kolom di atas atau unggah berkas.
                   </td>
                 </tr>
@@ -248,7 +290,19 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
   );
 }
 
-function TabNilai({ kelasId, siswa, muat, mapelOpsi }: { kelasId: string; siswa: Siswa[]; muat: () => Promise<void>; mapelOpsi: string[] }) {
+function TabNilai({
+  kelasId,
+  siswa,
+  muat,
+  mapelOpsi,
+  kolomRekap,
+}: {
+  kelasId: string;
+  siswa: Siswa[];
+  muat: () => Promise<void>;
+  mapelOpsi: string[];
+  kolomRekap: string[];
+}) {
   const [jenis, setJenis] = useState<JenisNilai | ''>('');
   const [mapel, setMapel] = useState('');
   const [judul, setJudul] = useState('');
@@ -257,8 +311,24 @@ function TabNilai({ kelasId, siswa, muat, mapelOpsi }: { kelasId: string; siswa:
   const [info, setInfo] = useState('');
   const [sibuk, setSibuk] = useState(false);
 
+  const [ditolak, setDitolak] = useState('');
+
+  const angkaNilai = (v: string) => Number(v.replace(',', '.'));
   const terisi = siswa.filter((s) => nilai[s.id] !== undefined && nilai[s.id] !== '');
-  const tidakValid = terisi.some((s) => !(Number(nilai[s.id]) >= 0 && Number(nilai[s.id]) <= 100));
+  const tidakValid = terisi.some((s) => !(angkaNilai(nilai[s.id]) >= 0 && angkaNilai(nilai[s.id]) <= 100));
+
+  const uasAda = jenis === 'UAS' && mapel.trim() ? judulUas(kolomRekap, mapel.trim()) : [];
+  const uasPenuh = jenis === 'UAS' && !uasAda.includes(judul.trim()) && uasAda.length >= BATAS_UAS;
+
+  // Angka di atas 100, negatif, atau huruf tidak masuk ke kolom; guru diberi tahu di baris itu.
+  function ketikNilai(id: string, v: string) {
+    if (!nilaiBolehDiketik(v.trim())) {
+      setDitolak(id);
+      return;
+    }
+    setDitolak('');
+    setNilai((lama) => ({ ...lama, [id]: v.trim() }));
+  }
 
   async function simpan() {
     if (!jenis) return;
@@ -270,7 +340,7 @@ function TabNilai({ kelasId, siswa, muat, mapelOpsi }: { kelasId: string; siswa:
         jenis,
         mapel: mapel.trim(),
         judul: judul.trim(),
-        items: terisi.map((s) => ({ siswaId: s.id, nilai: Number(nilai[s.id]) })),
+        items: terisi.map((s) => ({ siswaId: s.id, nilai: angkaNilai(nilai[s.id]) })),
       });
       setInfo(`${r.data.dibuat} nilai baru, ${r.data.diperbarui} diperbarui.`);
       setNilai({});
@@ -315,12 +385,46 @@ function TabNilai({ kelasId, siswa, muat, mapelOpsi }: { kelasId: string; siswa:
             ))}
           </SelectPil>
           <input aria-label="Judul penilaian (opsional)" placeholder="Judul, mis. Bab 3 (opsional)" className="input-pil sm:w-56" value={judul} onChange={(e) => setJudul(e.target.value)} />
-          <button type="button" onClick={simpan} disabled={sibuk || terisi.length === 0 || tidakValid || !mapel.trim() || !jenis} className="btn-utama py-3">
+          <button type="button" onClick={simpan} disabled={sibuk || terisi.length === 0 || tidakValid || uasPenuh || !mapel.trim() || !jenis} className="btn-utama py-3">
             {sibuk ? 'Menyimpan...' : `Simpan ${terisi.length} Nilai`}
           </button>
         </div>
       </div>
       <p className="mt-2 text-xs text-tinta-500">Nilai dengan mata pelajaran, jenis, dan judul yang sama memperbarui nilai lama siswa, bukan menambah baris baru.</p>
+      {jenis === 'UAS' && mapel.trim() && (
+        <div className="mt-3">
+          <Pesan nada={uasPenuh ? 'galat' : 'info'}>
+            {uasPenuh ? (
+              <>
+                UAS {mapel.trim()} di kelas ini sudah {BATAS_UAS} kali. Maksimal {BATAS_UAS} UAS per mata pelajaran (semester ganjil dan genap). Pilih
+                UAS yang sudah ada untuk memperbarui nilainya:
+              </>
+            ) : uasAda.includes(judul.trim()) ? (
+              <>Nilai UAS ini sudah ada; menyimpan akan memperbarui nilainya.</>
+            ) : (
+              <>
+                UAS ke-{uasAda.length + 1} dari maksimal {BATAS_UAS} untuk {mapel.trim()}.{uasAda.length > 0 && ' UAS yang sudah ada:'}
+              </>
+            )}
+            {uasAda.length > 0 && (
+              <span className="mt-2 flex flex-wrap gap-2">
+                {uasAda.map((j) => (
+                  <button
+                    key={j}
+                    type="button"
+                    onClick={() => setJudul(j)}
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                      judul.trim() === j ? 'border-ajarin-500 bg-ajarin-500 text-white' : 'border-ajarin-200 bg-white text-ajarin-600 hover:bg-ajarin-50'
+                    }`}
+                  >
+                    {j || 'UAS tanpa judul'}
+                  </button>
+                ))}
+              </span>
+            )}
+          </Pesan>
+        </div>
+      )}
       {(tidakValid || galat || info) && (
         <div className="mt-3 space-y-2">
           {tidakValid && <Pesan nada="awas">Nilai harus berada di antara 0 dan 100.</Pesan>}
@@ -354,12 +458,22 @@ function TabNilai({ kelasId, siswa, muat, mapelOpsi }: { kelasId: string; siswa:
                     type="number"
                     min={0}
                     max={100}
+                    step="any"
                     inputMode="decimal"
-                    placeholder="Input Nilai"
-                    className="mx-auto block w-full max-w-[6rem] rounded-[7px] border border-[#CCCCCC] px-2 py-1.5 text-center text-xs text-tinta-900 placeholder:text-[#CCCCCC] focus:border-ajarin-500 focus:outline-none focus:ring-2 focus:ring-ajarin-500/20"
+                    placeholder="0–100"
+                    aria-describedby={ditolak === s.id ? `tolak-${s.id}` : undefined}
+                    className={`mx-auto block w-full max-w-[6rem] rounded-[7px] border px-2 py-1.5 text-center text-xs text-tinta-900 placeholder:text-[#CCCCCC] focus:outline-none focus:ring-2 ${
+                      ditolak === s.id ? 'border-merah focus:border-merah focus:ring-merah/20' : 'border-[#CCCCCC] focus:border-ajarin-500 focus:ring-ajarin-500/20'
+                    }`}
                     value={nilai[s.id] ?? ''}
-                    onChange={(e) => setNilai({ ...nilai, [s.id]: e.target.value })}
+                    onChange={(e) => ketikNilai(s.id, e.target.value)}
+                    onBlur={() => ditolak === s.id && setDitolak('')}
                   />
+                  {ditolak === s.id && (
+                    <p id={`tolak-${s.id}`} role="alert" className="mt-1 text-center text-[11px] font-semibold text-merah">
+                      Nilai 0–100
+                    </p>
+                  )}
                 </td>
               </tr>
             ))}
@@ -373,12 +487,11 @@ function TabNilai({ kelasId, siswa, muat, mapelOpsi }: { kelasId: string; siswa:
 function TabRekap({ rekap, kelasId }: { rekap: Rekap; kelasId: string }) {
   const [galat, setGalat] = useState('');
   const [mapel, setMapel] = useState('');
-  const [kkmTeks, setKkmTeks] = useState('');
 
   const daftarMapel = useMemo(() => [...new Set(rekap.kolom.map(mapelDariKolom).filter(Boolean))], [rekap.kolom]);
   const kolom = useMemo(() => (mapel ? rekap.kolom.filter((k) => mapelDariKolom(k) === mapel) : rekap.kolom), [rekap.kolom, mapel]);
-  // KKM yang diketik hanya mengubah tampilan status di halaman ini; KKM kelas yang tersimpan tidak berubah.
-  const kkm = kkmTeks !== '' && Number(kkmTeks) >= 0 && Number(kkmTeks) <= 100 ? Number(kkmTeks) : rekap.kelas.kkm;
+  // KKM ditetapkan saat kelas dibuat dan tidak bisa diubah.
+  const kkm = rekap.kelas.kkm;
 
   const baris = useMemo(
     () =>
@@ -436,17 +549,12 @@ function TabRekap({ rekap, kelasId }: { rekap: Rekap; kelasId: string }) {
                 <option key={m}>{m}</option>
               ))}
             </SelectPil>
-            <input
-              aria-label="KKM"
-              type="number"
-              min={0}
-              max={100}
-              inputMode="numeric"
-              placeholder={`Masukkan KKM... (${rekap.kelas.kkm})`}
-              className="input-pil sm:w-52"
-              value={kkmTeks}
-              onChange={(e) => setKkmTeks(e.target.value)}
-            />
+            <span
+              className="inline-flex items-center justify-center rounded-[21px] border-[0.5px] border-[#CCCCCC] bg-tinta-50 px-4 py-2.5 text-sm font-semibold text-ajarin-600"
+              title="KKM ditetapkan saat kelas dibuat dan tidak bisa diubah"
+            >
+              KKM {kkm}
+            </span>
             <button type="button" onClick={ekspor} className="btn-garis py-2.5">
               Unduh Excel
             </button>
@@ -574,7 +682,7 @@ export default function KelasDetail() {
       {galat && <Pesan nada="galat">{galat}</Pesan>}
 
       {tab === 'rekap' && <TabRekap rekap={rekap} kelasId={rekap.kelas.id} />}
-      {tab === 'nilai' && <TabNilai kelasId={rekap.kelas.id} siswa={siswa} muat={muat} mapelOpsi={mapelOpsi} />}
+      {tab === 'nilai' && <TabNilai kelasId={rekap.kelas.id} siswa={siswa} muat={muat} mapelOpsi={mapelOpsi} kolomRekap={rekap.kolom} />}
       {tab === 'siswa' && <TabSiswa kelasId={rekap.kelas.id} siswa={siswa} muat={muat} />}
     </div>
   );

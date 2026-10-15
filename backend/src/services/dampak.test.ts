@@ -24,6 +24,7 @@ const sets: DataSet[] = [
     id: 's1',
     judul: 'Kuis PLSV',
     sumberId: null,
+    formKelasId: 'k1',
     targetKelasId: null,
     targetSiswa: [],
     analisis: [
@@ -43,6 +44,7 @@ const sets: DataSet[] = [
     id: 's2',
     judul: 'Remedial: Kuis PLSV',
     sumberId: 's1',
+    formKelasId: null,
     targetKelasId: 'k1',
     targetSiswa: ['eko', 'galih'],
     analisis: null,
@@ -96,4 +98,38 @@ test('ringkasan: siswa tanpa nilai tidak ikut dihitung, tanpa data tidak error',
   assert.equal(kosong.ringkasan.persenTuntas, null);
   assert.deepEqual(kosong.materi, []);
   assert.equal(kosong.remedial.total.sebelum, null);
+});
+
+test('per kelas: hanya kelas, set soal, dan remedial milik kelas yang dipilih', () => {
+  const kelasB: DataKelas = {
+    id: 'k2',
+    nama: '7B',
+    kkm: 70,
+    siswa: [{ id: 'budi', nama: 'Budi', nis: '9', nilai: [nilai('Kuis Pecahan', 40, 5)] }],
+  };
+  const setB: DataSet = {
+    id: 's3',
+    judul: 'Kuis Pecahan',
+    sumberId: null,
+    formKelasId: 'k2',
+    targetKelasId: null,
+    targetSiswa: [],
+    analisis: [{ butirId: 'c1', persenBenar: 20 }],
+    butir: [{ id: 'c1', materi: 'Pecahan' }],
+  };
+  const semua = hitungDampak([...kelas, kelasB], [...sets, setB]);
+  assert.equal(semua.ringkasan.jumlahKelas, 2);
+  assert.deepEqual(semua.materi.map((m) => m.materi), ['Pecahan', 'Persamaan linear']);
+
+  const a = hitungDampak([...kelas, kelasB], [...sets, setB], 'k1');
+  assert.equal(a.ringkasan.jumlahKelas, 1);
+  assert.equal(a.ringkasan.jumlahAnalisis, 1);
+  assert.deepEqual(a.materi.map((m) => m.materi), ['Persamaan linear']);
+  assert.equal(a.remedial.sets.length, 1);
+  assert.ok(a.perhatian.every((p) => p.kelasId === 'k1'));
+
+  const b = hitungDampak([...kelas, kelasB], [...sets, setB], 'k2');
+  assert.deepEqual(b.materi.map((m) => m.materi), ['Pecahan']);
+  assert.equal(b.remedial.sets.length, 0);
+  assert.deepEqual(b.perhatian.map((p) => p.siswaId), ['budi']);
 });

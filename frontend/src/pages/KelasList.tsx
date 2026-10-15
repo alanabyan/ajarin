@@ -16,6 +16,7 @@ import {
   tapelSekarang,
 } from '../lib/akademik';
 import { useAuth } from '../lib/auth';
+import { BilahTerpilih, Centang, CentangSemua, usePilihan } from '../components/PilihSiswa';
 import type { KelasRingkas, Siswa } from '../types';
 
 interface IsianKelas {
@@ -174,9 +175,9 @@ function FormKelas({ onSelesai }: { onSelesai: () => Promise<void> }) {
             ))}
           </select>
         </Kolom>
-        <Kolom id="kkm" label="KKM" galat={kolom.kkm}>
+        <Kolom id="kkm" label="KKM" galat={kolom.kkm} petunjuk="Tidak bisa diubah setelah kelas dibuat.">
           <input
-            {...propsKontrol('kkm', kolom.kkm)}
+            {...propsKontrol('kkm', kolom.kkm, true)}
             type="number"
             inputMode="numeric"
             min={0}
@@ -263,12 +264,30 @@ export default function KelasList() {
     }
   }
 
+  const q = cariSiswa.trim().toLowerCase();
+  const siswaTampil = siswa.filter((s) => `${s.nama} ${s.nis}`.toLowerCase().includes(q));
+  const pilihan = usePilihan(siswaTampil.map((s) => s.id));
+  const [menghapus, setMenghapus] = useState(false);
+
+  async function hapusTerpilih() {
+    if (!window.confirm(`Hapus ${pilihan.jumlah} siswa terpilih beserta seluruh nilainya? Tindakan ini tidak bisa dibatalkan.`)) return;
+    setMenghapus(true);
+    setGalat('');
+    try {
+      await api.post('/kelas/siswa/hapus', { ids: [...pilihan.terpilih] });
+      pilihan.kosongkan();
+      await Promise.all([muatSiswa(kelasId), muat()]);
+    } catch (e) {
+      setGalat(pesanError(e, 'Gagal menghapus siswa.'));
+    } finally {
+      setMenghapus(false);
+    }
+  }
+
   if (!daftar) return <Memuat />;
 
   const tampil = daftar.filter((k) => cocok(teksKelas(k), cari));
   const kelasTerpilih = daftar.find((k) => k.id === kelasId);
-  const q = cariSiswa.trim().toLowerCase();
-  const siswaTampil = siswa.filter((s) => `${s.nama} ${s.nis}`.toLowerCase().includes(q));
 
   return (
     <div className="space-y-6">
@@ -347,7 +366,7 @@ export default function KelasList() {
                 <input
                   type="search"
                   aria-label="Cari siswa"
-                  placeholder="Search..."
+                  placeholder="Cari nama atau NIS..."
                   className="input-pil pl-11"
                   value={cariSiswa}
                   onChange={(e) => setCariSiswa(e.target.value)}
@@ -355,10 +374,16 @@ export default function KelasList() {
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto rounded-[7px] border border-[#E6E6E6]">
+          <BilahTerpilih jumlah={pilihan.jumlah} sibuk={menghapus} onHapus={hapusTerpilih} onBatal={pilihan.kosongkan} />
+          <div className="mt-3 overflow-x-auto rounded-[7px] border border-[#E6E6E6]">
             <table className="w-full min-w-[560px] text-sm">
               <thead>
                 <tr className="border-b border-[#E6E6E6] text-left font-semibold text-ajarin-700">
+                  <th className="w-10 px-4 py-3.5">
+                    {siswaTampil.length > 0 && (
+                      <CentangSemua semua={pilihan.semua} sebagian={pilihan.sebagian} onChange={pilihan.ubahSemua} label="Pilih semua siswa yang tampil" />
+                    )}
+                  </th>
                   <th className="w-16 px-4 py-3.5">No</th>
                   <th className="px-4 py-3.5">Nama Siswa</th>
                   <th className="px-4 py-3.5 text-center">Kelas</th>
@@ -368,7 +393,10 @@ export default function KelasList() {
               </thead>
               <tbody className="font-medium text-tinta-400">
                 {siswaTampil.map((s, i) => (
-                  <tr key={s.id} className="border-b border-[#E6E6E6] last:border-0">
+                  <tr key={s.id} className={`border-b border-[#E6E6E6] last:border-0 ${pilihan.ada(s.id) ? 'bg-ajarin-50' : ''}`}>
+                    <td className="px-4 py-3">
+                      <Centang checked={pilihan.ada(s.id)} onChange={() => pilihan.ubah(s.id)} label={`Pilih ${s.nama}`} />
+                    </td>
                     <td className="px-4 py-3">{i + 1}</td>
                     <td className="px-4 py-3">{s.nama}</td>
                     <td className="px-4 py-3 text-center">{kelasTerpilih?.nama}</td>
@@ -382,7 +410,7 @@ export default function KelasList() {
                 ))}
                 {siswaTampil.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-tinta-500">
+                    <td colSpan={6} className="px-4 py-6 text-center text-tinta-500">
                       {siswa.length === 0 ? 'Belum ada siswa di kelas ini. Tambahkan lewat Detail Kelas.' : 'Tidak ada siswa yang cocok.'}
                     </td>
                   </tr>
