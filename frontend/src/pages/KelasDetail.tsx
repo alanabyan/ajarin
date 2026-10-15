@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Kosong, Memuat, Pesan, SelectPil } from '../components/ui';
+import { Kosong, Memuat, Pesan, SelectPil, TombolKembali } from '../components/ui';
 import { NAMA_ORANG, NIS_VALID } from '../lib/akademik';
 import api, { pesanError, unduh } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -545,6 +545,7 @@ export default function KelasDetail() {
 
   return (
     <div className="space-y-2.5">
+      <TombolKembali ke="/kelas" label="Kembali ke Daftar Kelas" />
       <section className="flex flex-col gap-2 rounded-[21px] border border-[#E6E6E6] py-2 pl-5 pr-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 py-1 sm:py-0">
           <h1 className="truncate text-xl font-bold">Kelas {rekap.kelas.nama}</h1>

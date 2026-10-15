@@ -1,6 +1,6 @@
 import { FormEvent, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Header, Kolom, PeringatanAI, Pesan, PilihMapel, propsKontrol } from '../components/ui';
+import { Header, Kolom, PeringatanAI, Pesan, PilihMapel, TombolKembali, propsKontrol } from '../components/ui';
 import api, { kodeError, kolomError, pesanError } from '../lib/api';
 import { JENJANG, KELAS_PER_JENJANG, MAPEL_PER_JENJANG, fase } from '../lib/akademik';
 import { useAuth } from '../lib/auth';
@@ -53,7 +53,6 @@ export default function SoalBaru() {
     jumlah: 10,
   });
   const [f, setF] = useState<Isian>(() => awal(dariModul));
-  const [judulManual, setJudulManual] = useState(false);
   const [kolom, setKolom] = useState<Record<string, string>>({});
   const [peringatan, setPeringatan] = useState(false);
   const [sibuk, setSibuk] = useState(false);
@@ -114,19 +113,25 @@ export default function SoalBaru() {
   function lepasModul() {
     navigate('/soal/baru', { replace: true, state: null });
     setF(awal());
-    setJudulManual(false);
     setKolom({});
     setPeringatan(false);
     setGalat('');
   }
 
+  // Ganti materi: judul selalu disusun ulang dari materi baru; ketikan tambahan pada judul sebelumnya dibuang.
   function pilihMateri(m: string) {
     atur('materi', m);
-    if (!judulManual) atur('judul', `Kuis ${m}`.slice(0, 150));
+    atur('judul', `Kuis ${m}`.slice(0, 150));
   }
 
   return (
     <div className="max-w-2xl">
+      {/* Dibuka dari modul: kembali ke modul itu; selain itu ke daftar Bank Soal. */}
+      {dariModul ? (
+        <TombolKembali ke={`/modul/${dariModul.id}`} label="Kembali ke modul" />
+      ) : (
+        <TombolKembali ke="/soal" label="Kembali ke Bank Soal" />
+      )}
       <Header judul="Buat Set Soal" deskripsi="Periksa dan koreksi soal sebelum dibagikan kepada siswa." />
       <form ref={formRef} onSubmit={kirim} noValidate className="kartu space-y-4">
         {dariModul && (
@@ -161,10 +166,7 @@ export default function SoalBaru() {
           </div>
         )}
         <Kolom id="judul" label="Judul set soal" galat={kolom.judul}>
-          <input {...propsKontrol('judul', kolom.judul)} maxLength={150} placeholder="Contoh: Kuis Persamaan Linear" value={f.judul} onChange={(e) => {
-              setJudulManual(true);
-              atur('judul', e.target.value);
-            }} />
+          <input {...propsKontrol('judul', kolom.judul)} maxLength={150} placeholder="Contoh: Kuis Persamaan Linear" value={f.judul} onChange={(e) => atur('judul', e.target.value)} />
         </Kolom>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Kolom id="jenjang" label="Jenjang">

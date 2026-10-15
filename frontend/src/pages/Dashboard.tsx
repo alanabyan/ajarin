@@ -126,7 +126,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,5fr)_minmax(0,3fr)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,5fr)_minmax(0,3fr)]">
         <section className="relative flex min-h-[170px] items-center overflow-hidden rounded-[14px] bg-gradient-to-r from-[#7C7CFF] to-[#1D1DCF] p-6 text-white sm:p-8">
           <div className="relative z-10 sm:max-w-[48%]">
             <h1 className="text-2xl font-bold sm:text-3xl">
@@ -153,19 +153,21 @@ export default function Dashboard() {
           />
         </section>
 
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            ['Ruang Kelas', d.kelas.length, '/kelas'],
-            ['Modul Ajar', d.modul.length, '/modul'],
-            ['Bank Soal', d.soal.length, '/soal'],
-          ].map(([label, nilai, ke]) => (
-            <Link key={label as string} to={ke as string} className="kartu flex flex-col justify-between gap-3 p-4 transition-colors hover:border-ajarin-500">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-ajarin-50 text-ajarin-500">
-                <Ikon nama="modul" />
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          {(
+            [
+              ['Kelas', d.kelas.length, '/kelas', 'kelas'],
+              ['Modul Ajar', d.modul.length, '/modul', 'modul'],
+              ['Bank Soal', d.soal.length, '/soal', 'soal'],
+            ] as const
+          ).map(([label, nilai, ke, ikon]) => (
+            <Link key={label} to={ke} className="kartu flex min-w-0 flex-col justify-between gap-2 p-3 transition-colors hover:border-ajarin-500 sm:gap-3 sm:p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ajarin-50 text-ajarin-500 sm:h-11 sm:w-11">
+                <Ikon nama={ikon} />
               </span>
-              <span>
-                <span className="block text-sm font-semibold text-ajarin-600">{label}</span>
-                <span className="block text-3xl font-bold text-ajarin-500">{nilai}</span>
+              <span className="min-w-0">
+                <span className="block truncate text-xs font-semibold text-ajarin-600 sm:text-sm">{label}</span>
+                <span className="block text-2xl font-bold text-ajarin-500 sm:text-3xl">{nilai}</span>
               </span>
             </Link>
           ))}
@@ -177,9 +179,9 @@ export default function Dashboard() {
         langkah={
           demo
             ? [
-                { ke: '/modul', judul: 'Lihat modul ajar contoh', isi: 'Draf Kurikulum Merdeka lengkap dengan rumus. Coba sunting, cetak, atau unduh Word.', selesai: false },
+                { ke: '/modul', judul: 'Lihat modul ajar contoh', isi: 'Rencana satu semester lengkap dengan tabel per pertemuan. Coba sunting, cetak, atau unduh Word.', selesai: false },
                 { ke: '/soal', judul: 'Bank soal & soal remedial', isi: 'Buka kuis contoh, lalu lihat set remedial yang dibuat khusus untuk siswa di bawah KKM.', selesai: false },
-                { ke: '/kelas', judul: 'Rekap nilai kelas 7A', isi: 'Nilai, status tuntas / remedial, dan rapor tiap siswa.', selesai: false },
+                { ke: '/kelas', judul: 'Rekap nilai kelas VII A', isi: 'Nilai, status tuntas / remedial, dan rapor tiap siswa.', selesai: false },
                 { ke: '/dampak', judul: 'Dampak & peta belajar', isi: 'Materi yang belum dikuasai, tren kelas, dan perubahan nilai setelah remedial.', selesai: false },
               ]
             : [
@@ -191,7 +193,7 @@ export default function Dashboard() {
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <section className="kartu">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-lg font-bold sm:text-xl">Kelas yang anda buat</h2>
@@ -202,11 +204,11 @@ export default function Dashboard() {
           {d.kelas.length === 0 ? (
             <p className="py-6 text-center text-sm text-tinta-500">Belum ada kelas. Tambahkan kelas pertama Anda di menu Kelas & Nilai.</p>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 md:grid-cols-3">
               {d.kelas.slice(0, 3).map((k) => (
                 <li key={k.id} className="flex flex-col">
-                  <Sampul varian="kelas" className="!aspect-auto h-[140px] sm:h-[159px]" />
-                  <p className="mt-3 text-lg font-bold">Kelas {k.nama}</p>
+                  <Sampul varian="kelas" className="!aspect-auto h-[110px] sm:h-[140px]" />
+                  <p className="mt-3 truncate text-lg font-bold">Kelas {k.nama}</p>
                   <p className="text-xs text-tinta-300">
                     {k.tapel} <span className="mx-1 text-tinta-100">|</span> {k.jumlahSiswa} Siswa
                   </p>
@@ -261,28 +263,30 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="hidden overflow-x-auto rounded-[14px] border border-ajarin-50 md:block">
-              <table className="w-full min-w-[640px] text-sm">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead>
                   <tr className="border-b border-[#E6E6E6] text-left text-ajarin-200">
-                    <th className="px-4 py-3.5 font-bold">Nama Modul</th>
-                    <th className="px-4 py-3.5 font-bold">Topik</th>
+                    <th className="w-full px-4 py-3.5 font-bold">Nama Modul</th>
                     <th className="px-4 py-3.5 text-center font-bold">Kelas</th>
-                    <th className="px-4 py-3.5 text-center font-bold">Durasi Modul</th>
-                    <th className="px-4 py-3.5 text-right font-bold">Tanggal Dibuat</th>
+                    <th className="px-4 py-3.5 text-center font-bold">Durasi</th>
+                    <th className="whitespace-nowrap px-4 py-3.5 text-right font-bold">Tanggal Dibuat</th>
                   </tr>
                 </thead>
                 <tbody className="font-medium">
                   {d.modul.slice(0, 4).map((m) => (
                     <tr key={m.id} className="border-b border-[#E6E6E6] last:border-0 hover:bg-ajarin-50/50">
-                      <td className="px-4 py-3.5">
-                        <Link to={`/modul/${m.id}`} className="hover:text-ajarin-500 hover:underline">
+                      <td className="max-w-0 px-4 py-3.5">
+                        <Link to={`/modul/${m.id}`} className="block truncate font-semibold hover:text-ajarin-500 hover:underline">
                           {m.judul}
                         </Link>
+                        <span className="block truncate text-xs text-tinta-500">{m.topik}</span>
                       </td>
-                      <td className="px-4 py-3.5">{m.topik}</td>
-                      <td className="px-4 py-3.5 text-center">{m.kelas}</td>
-                      <td className="px-4 py-3.5 text-center">{m.alokasiWaktu ?? '–'}</td>
-                      <td className="px-4 py-3.5 text-right">{tanggalPanjang(m.createdAt ?? m.updatedAt)}</td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-center">
+                        {m.jenjang} {m.kelas}
+                        {m.semester && <span className="block text-xs text-tinta-500">Sem. {m.semester}</span>}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-center">{m.jumlahPertemuan ? `${m.jumlahPertemuan} pertemuan` : m.alokasiWaktu}</td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-right">{tanggalPanjang(m.createdAt ?? m.updatedAt)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -293,8 +297,10 @@ export default function Dashboard() {
                 <li key={m.id}>
                   <Link to={`/modul/${m.id}`} className="block rounded-xl border border-tinta-100 p-3 hover:border-ajarin-500">
                     <span className="block font-semibold">{m.judul}</span>
+                    <span className="mt-0.5 line-clamp-1 text-xs text-tinta-500">{m.topik}</span>
                     <span className="block text-xs text-tinta-500">
-                      {m.topik} · {m.jenjang} kelas {m.kelas} · {tanggalPanjang(m.createdAt ?? m.updatedAt)}
+                      {m.jenjang} kelas {m.kelas}
+                      {m.semester && ` · Sem. ${m.semester}`} · {tanggalPanjang(m.createdAt ?? m.updatedAt)}
                     </span>
                   </Link>
                 </li>

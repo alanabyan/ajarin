@@ -6,13 +6,16 @@ import { JENJANG, MAPEL_PER_JENJANG } from '../lib/akademik';
 import { useAuth } from '../lib/auth';
 import type { Jenjang } from '../types';
 
+// Halaman akun dibuat muat satu layar: di layar lebar judul di kiri dan formulir di kanan, di HP bertumpuk rapat.
 function Bingkai({ judul, deskripsi, children }: { judul: string; deskripsi: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
-        <Logo />
-        <h1 className="mt-6 text-3xl font-semibold">{judul}</h1>
-        <p className="mb-6 mt-1 text-tinta-500">{deskripsi}</p>
+    <div className="flex min-h-[100dvh] items-center justify-center px-4 py-5">
+      <div className="w-full max-w-md lg:grid lg:max-w-4xl lg:grid-cols-[1fr_28rem] lg:items-center lg:gap-14">
+        <div className="mb-4 lg:mb-0">
+          <Logo />
+          <h1 className="mt-4 text-2xl font-semibold sm:text-3xl lg:mt-8 lg:text-4xl">{judul}</h1>
+          <p className="mt-1 text-sm text-tinta-500 sm:text-base">{deskripsi}</p>
+        </div>
         <div className="kartu">{children}</div>
       </div>
     </div>
@@ -89,7 +92,7 @@ export function Masuk() {
   return (
     <Bingkai judul="Masuk" deskripsi="Lanjutkan menyiapkan perangkat ajar Anda.">
       {state.terdaftar && !belumVerifikasi && (
-        <div className="mb-5">
+        <div className="mb-4">
           <Pesan nada="sukses">
             Akun berhasil dibuat. Kami mengirim tautan verifikasi ke <b>{state.terdaftar}</b>. Buka email Anda (periksa juga folder Spam), klik
             tautannya, lalu masuk di sini.
@@ -98,11 +101,11 @@ export function Masuk() {
         </div>
       )}
       {state.terverifikasi && (
-        <div className="mb-5">
+        <div className="mb-4">
           <Pesan nada="sukses">Email berhasil diverifikasi. Silakan masuk.</Pesan>
         </div>
       )}
-      <form onSubmit={kirim} className="space-y-4">
+      <form onSubmit={kirim} className="space-y-3">
         <div>
           <label htmlFor="email" className="label">
             Email
@@ -125,13 +128,13 @@ export function Masuk() {
           {sibuk ? 'Memproses...' : 'Masuk'}
         </button>
       </form>
-      <div className="my-5 flex items-center gap-3 text-xs text-tinta-300">
+      <div className="my-4 flex items-center gap-3 text-xs text-tinta-300">
         <span className="h-px flex-1 bg-tinta-100" /> atau <span className="h-px flex-1 bg-tinta-100" />
       </div>
       <button type="button" disabled={sibuk} onClick={() => void jalankan(masukDemo, 'Akun demo belum bisa dibuka.')} className="btn-garis w-full">
         Coba akun demo (tanpa daftar)
       </button>
-      <p className="mt-5 text-sm text-tinta-500">
+      <p className="mt-4 text-sm text-tinta-500">
         Belum punya akun?{' '}
         <Link to="/daftar" className="font-medium text-tinta-700 underline">
           Daftar

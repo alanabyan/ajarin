@@ -48,6 +48,19 @@ export function Header({ judul, deskripsi, aksi, bertumpuk = false }: { judul: s
   );
 }
 
+/** Tombol kembali ke halaman induk (bukan riwayat browser), supaya tetap jelas walau halaman dibuka langsung. */
+export function TombolKembali({ ke, label }: { ke: string; label: string }) {
+  return (
+    <Link
+      to={ke}
+      className="tanpa-cetak mb-3 inline-flex items-center gap-1 rounded-full py-1 pr-3 text-sm font-bold text-ajarin-500 transition-colors hover:bg-ajarin-50 hover:text-ajarin-600"
+    >
+      <Ikon nama="kiri" className="h-5 w-5" />
+      {label}
+    </Link>
+  );
+}
+
 export function Kosong({ judul, isi, aksi }: { judul: string; isi: string; aksi?: ReactNode }) {
   return (
     <div className="kartu py-10 text-center">
@@ -110,7 +123,7 @@ export function useCari(): string {
   return (sp.get('q') ?? '').trim().toLowerCase();
 }
 
-type NamaIkon = 'beranda' | 'modul' | 'soal' | 'kelas' | 'dampak' | 'cari' | 'hapus' | 'plus' | 'panah' | 'kanan' | 'menu' | 'bawah' | 'keluar' | 'bantuan';
+type NamaIkon = 'beranda' | 'modul' | 'soal' | 'kelas' | 'dampak' | 'cari' | 'hapus' | 'plus' | 'panah' | 'kanan' | 'menu' | 'bawah' | 'keluar' | 'bantuan' | 'kiri';
 
 export function Ikon({ nama, className = 'h-5 w-5' }: { nama: NamaIkon; className?: string }) {
   const gambar: Record<NamaIkon, ReactNode> = {
@@ -158,6 +171,7 @@ export function Ikon({ nama, className = 'h-5 w-5' }: { nama: NamaIkon; classNam
     plus: <path d="M12 5v14M5 12h14" />,
     panah: <path d="M3 12h18m-5-5 5 5-5 5" />,
     kanan: <path d="m9 6 6 6-6 6" />,
+    kiri: <path d="m15 6-6 6 6 6" />,
     menu: <path d="M4 6h16M4 12h16M4 18h16" />,
     bawah: <path d="m6 9 6 6 6-6" />,
     keluar: (
