@@ -11,6 +11,7 @@ import ModulBaru from './pages/ModulBaru';
 import ModulDetail from './pages/ModulDetail';
 import ModulList from './pages/ModulList';
 import Privasi from './pages/Privasi';
+import Profil from './pages/Profil';
 import SoalBaru from './pages/SoalBaru';
 import SoalDetail from './pages/SoalDetail';
 import SoalList from './pages/SoalList';
@@ -33,6 +34,7 @@ export default function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dampak" element={<Dampak />} />
+        <Route path="/profil" element={<Profil />} />
         <Route path="/modul" element={<ModulList />} />
         <Route path="/modul/baru" element={<ModulBaru />} />
         <Route path="/modul/:id" element={<ModulDetail />} />

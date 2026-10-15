@@ -1,10 +1,9 @@
 import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Kolom, Logo, Pesan, PilihMapel, propsKontrol } from '../components/ui';
+import { Kolom, Logo, Pesan, propsKontrol } from '../components/ui';
 import api, { kodeError, kolomError, pesanError } from '../lib/api';
-import { JENJANG, MAPEL_PER_JENJANG } from '../lib/akademik';
+import { BATAS_AKUN, galatNama, galatSekolah } from '../lib/akun';
 import { useAuth } from '../lib/auth';
-import type { Jenjang } from '../types';
 
 // Halaman akun dibuat muat satu layar: di layar lebar judul di kiri dan formulir di kanan, di HP bertumpuk rapat.
 function Bingkai({ judul, deskripsi, children }: { judul: string; deskripsi: string; children: ReactNode }) {
@@ -144,19 +143,20 @@ export function Masuk() {
   );
 }
 
-type IsianDaftar = { nama: string; email: string; password: string; ulangi: string; jenjang: Jenjang; mapel: string; sekolah: string };
+type IsianDaftar = { nama: string; email: string; password: string; ulangi: string; sekolah: string };
 
+// Akun bersifat umum: tidak ada jenjang dan mata pelajaran; nama sekolah opsional dan bisa dilengkapi di Profil.
 function validasiDaftar(f: IsianDaftar): Record<string, string> {
   const g: Record<string, string> = {};
-  const nama = f.nama.trim();
-  if (nama.length < 2) g.nama = 'Nama minimal 2 karakter.';
-  else if (!/^[\p{L} .,'-]+$/u.test(nama)) g.nama = 'Nama hanya boleh berisi huruf, spasi, titik, koma, apostrof, dan tanda hubung.';
+  const nama = galatNama(f.nama);
+  if (nama) g.nama = nama;
   if (!EMAIL_VALID.test(f.email.trim())) g.email = 'Format email tidak valid, mis. nama@gmail.com.';
+  else if (f.email.trim().length > BATAS_AKUN.email) g.email = `Email maksimal ${BATAS_AKUN.email} karakter.`;
   if (f.password.length < 8) g.password = 'Kata sandi minimal 8 karakter.';
   else if (!/[A-Za-z]/.test(f.password) || !/[0-9]/.test(f.password)) g.password = 'Kata sandi harus mengandung huruf dan angka.';
   if (f.ulangi !== f.password) g.ulangi = 'Kata sandi tidak sama.';
-  if (f.mapel.trim().length < 2) g.mapel = 'Pilih atau tulis mata pelajaran.';
-  if (f.sekolah.trim().length > 120) g.sekolah = 'Maksimal 120 karakter.';
+  const sekolah = galatSekolah(f.sekolah);
+  if (sekolah) g.sekolah = sekolah;
   return g;
 }
 
@@ -180,7 +180,7 @@ function SyaratSandi({ sandi }: { sandi: string }) {
 export function Daftar() {
   const { user, daftar } = useAuth();
   const navigate = useNavigate();
-  const [f, setF] = useState<IsianDaftar>({ nama: '', email: '', password: '', ulangi: '', jenjang: 'SMP', mapel: '', sekolah: '' });
+  const [f, setF] = useState<IsianDaftar>({ nama: '', email: '', password: '', ulangi: '', sekolah: '' });
   const [kolom, setKolom] = useState<Record<string, string>>({});
   const [galat, setGalat] = useState('');
   const [sibuk, setSibuk] = useState(false);
@@ -192,13 +192,6 @@ export function Daftar() {
     setF((lama) => ({ ...lama, [k]: v }));
     if (kolom[k]) setKolom(({ [k]: _, ...sisa }) => sisa);
   };
-
-  // Ganti jenjang: mapel dari daftar jenjang lama yang tidak ada di jenjang baru dikosongkan.
-  function ubahJenjang(j: Jenjang) {
-    const dariDaftar = JENJANG.some((x) => MAPEL_PER_JENJANG[x].includes(f.mapel));
-    atur('jenjang', j);
-    if (dariDaftar && !MAPEL_PER_JENJANG[j].includes(f.mapel)) atur('mapel', '');
-  }
 
   function fokusGalat(g: Record<string, string>) {
     const pertama = Object.keys(g)[0];
@@ -229,14 +222,14 @@ export function Daftar() {
     <Bingkai judul="Daftar" deskripsi="Buat akun gratis untuk mulai menyusun perangkat ajar.">
       <form ref={formRef} onSubmit={kirim} noValidate className="space-y-4">
         <Kolom id="nama" label="Nama lengkap" galat={kolom.nama}>
-          <input {...propsKontrol('nama', kolom.nama)} autoComplete="name" maxLength={100} value={f.nama} onChange={(e) => atur('nama', e.target.value)} />
+          <input {...propsKontrol('nama', kolom.nama)} autoComplete="name" maxLength={BATAS_AKUN.nama} value={f.nama} onChange={(e) => atur('nama', e.target.value)} />
         </Kolom>
         <Kolom id="email" label="Email" galat={kolom.email} petunjuk="Tautan verifikasi akan dikirim ke email ini.">
           <input
             {...propsKontrol('email', kolom.email, true)}
             type="email"
             autoComplete="email"
-            maxLength={120}
+            maxLength={BATAS_AKUN.email}
             placeholder="nama@gmail.com"
             value={f.email}
             onChange={(e) => atur('email', e.target.value)}
@@ -265,20 +258,19 @@ export function Daftar() {
         <Kolom id="ulangi" label="Ulangi kata sandi" galat={kolom.ulangi}>
           <input {...propsKontrol('ulangi', kolom.ulangi)} type="password" autoComplete="new-password" maxLength={72} value={f.ulangi} onChange={(e) => atur('ulangi', e.target.value)} />
         </Kolom>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Kolom id="jenjang" label="Jenjang">
-            <select {...propsKontrol('jenjang')} value={f.jenjang} onChange={(e) => ubahJenjang(e.target.value as Jenjang)}>
-              {JENJANG.map((j) => (
-                <option key={j}>{j}</option>
-              ))}
-            </select>
-          </Kolom>
-          <Kolom id="mapel" label="Mata pelajaran" galat={kolom.mapel}>
-            <PilihMapel id="mapel" jenjang={f.jenjang} value={f.mapel} onChange={(v) => atur('mapel', v)} galat={kolom.mapel} />
-          </Kolom>
-        </div>
-        <Kolom id="sekolah" label="Sekolah (opsional)" galat={kolom.sekolah}>
-          <input {...propsKontrol('sekolah', kolom.sekolah)} maxLength={120} placeholder="mis. SMK Negeri 1 Contoh" value={f.sekolah} onChange={(e) => atur('sekolah', e.target.value)} />
+        <Kolom
+          id="sekolah"
+          label="Nama sekolah (opsional)"
+          galat={kolom.sekolah}
+          petunjuk={`${f.sekolah.length}/${BATAS_AKUN.sekolah} karakter. Bisa diisi atau diubah nanti di Profil.`}
+        >
+          <input
+            {...propsKontrol('sekolah', kolom.sekolah, true)}
+            maxLength={BATAS_AKUN.sekolah}
+            placeholder="mis. SMK Negeri 1 Contoh"
+            value={f.sekolah}
+            onChange={(e) => atur('sekolah', e.target.value)}
+          />
         </Kolom>
         {galat && <Pesan nada="galat">{galat}</Pesan>}
         <button type="submit" disabled={sibuk} className="btn-utama w-full">

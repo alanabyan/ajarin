@@ -6,7 +6,7 @@ import { requireAuth } from '../middleware/auth';
 import { simpanNilaiKelas } from '../services/nilai';
 import { normNis } from '../utils/nis';
 import { BarisRekap, excelRekap } from '../utils/excel';
-import { NAMA_ORANG, NIS_VALID, ROMBEL, SEMUA_TINGKAT, namaKelasBaku, normJurusan, tapelValid } from '../utils/akademik';
+import { BATAS_IMPOR_SISWA, NAMA_ORANG, NIS_VALID, ROMBEL, SEMUA_TINGKAT, namaKelasBaku, normJurusan, tapelValid } from '../utils/akademik';
 
 const router = Router();
 router.use(requireAuth);
@@ -135,7 +135,10 @@ router.post(
     const kelas = await milik(req.params.id, uid(req));
     const { siswa } = z
       .object({
-        siswa: z.array(z.object({ nama: z.string().trim(), nis: z.string().trim() })).min(1).max(200),
+        siswa: z
+          .array(z.object({ nama: z.string().trim(), nis: z.string().trim() }))
+          .min(1)
+          .max(BATAS_IMPOR_SISWA, `Maksimal ${BATAS_IMPOR_SISWA} siswa sekali tambah. Bagi daftar menjadi beberapa bagian.`),
       })
       .parse(req.body);
 

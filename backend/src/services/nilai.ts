@@ -1,5 +1,6 @@
 import { prisma } from '../lib/db';
 import { HttpError } from '../lib/http';
+import { mapelResmi } from '../utils/akademik';
 import { normNis } from '../utils/nis';
 
 export const BATAS_UAS = 2;
@@ -23,6 +24,24 @@ export async function simpanNilaiKelas(
 ) {
   const kelas = await prisma.kelas.findFirst({ where: { id: kelasId, userId }, include: { siswa: true } });
   if (!kelas) throw new HttpError(404, 'Kelas tidak ditemukan.');
+
+  // Mata pelajaran harus resmi, atau mapel khusus yang memang sudah dipakai guru (di bank soal, modul, atau kelas ini).
+  // Tanpa ini, batas UAS per mapel bisa dilewati dengan mengetik nama mapel asal ("ada", "adada", ...).
+  const resmi = mapelResmi(mapel);
+  if (resmi) {
+    mapel = resmi;
+  } else {
+    const [soal, modul, nilaiKelas] = await Promise.all([
+      prisma.setSoal.findFirst({ where: { userId, mapel }, select: { id: true } }),
+      prisma.modul.findFirst({ where: { userId, mapel }, select: { id: true } }),
+      prisma.nilai.findFirst({ where: { mapel, siswa: { kelasId } }, select: { id: true } }),
+    ]);
+    if (!soal && !modul && !nilaiKelas) {
+      throw new HttpError(400, `Mata pelajaran "${mapel}" tidak dikenal. Pilih dari daftar mata pelajaran.`, {
+        kolom: { mapel: 'Pilih mata pelajaran dari daftar.' },
+      });
+    }
+  }
 
   // UAS paling banyak 2 kali per mata pelajaran di satu kelas (semester ganjil dan genap).
   // Menyimpan ulang UAS yang sudah ada (judul sama) tetap boleh, karena hanya memperbarui nilainya.

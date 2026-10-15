@@ -45,9 +45,10 @@ function validasiKelas(f: IsianKelas, wajibJurusan: boolean): Record<string, str
  */
 function FormKelas({ onSelesai }: { onSelesai: () => Promise<void> }) {
   const { user } = useAuth();
-  const jenjang = user?.jenjang ?? 'SMP';
+  // Akun umum tidak punya jenjang: semua tingkat I-XII ditawarkan dan jurusan tidak diwajibkan.
+  const jenjang = user?.jenjang ?? null;
   const [f, setF] = useState<IsianKelas>({
-    tingkat: KELAS_PER_JENJANG[jenjang][0],
+    tingkat: jenjang ? KELAS_PER_JENJANG[jenjang][0] : '',
     jurusan: '',
     rombel: '',
     tapel: tapelSekarang(),
@@ -109,9 +110,14 @@ function FormKelas({ onSelesai }: { onSelesai: () => Promise<void> }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <Kolom id="tingkat" label="Tingkat" galat={kolom.tingkat}>
           <select {...propsKontrol('tingkat', kolom.tingkat)} value={f.tingkat} onChange={(e) => atur('tingkat', e.target.value)}>
-            {/* SMA dan SMK sama-sama X-XII, jadi cukup satu grup sesuai jenjang guru. */}
+            {!jenjang && (
+              <option value="" disabled>
+                Pilih tingkat
+              </option>
+            )}
+            {/* SMA dan SMK sama-sama X-XII, jadi cukup satu grup: SMK untuk guru SMK, selain itu "SMA/SMK". */}
             {JENJANG.filter((j) => j !== (jenjang === 'SMK' ? 'SMA' : 'SMK')).map((j) => (
-              <optgroup key={j} label={j}>
+              <optgroup key={j} label={j === 'SMA' && jenjang !== 'SMA' ? 'SMA/SMK' : j}>
                 {KELAS_PER_JENJANG[j].map((k) => (
                   <option key={k}>{k}</option>
                 ))}
@@ -190,7 +196,7 @@ function FormKelas({ onSelesai }: { onSelesai: () => Promise<void> }) {
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-tinta-500">
-          Nama kelas: <b className="text-lg text-ajarin-600">{nama}</b> <span className="text-tinta-500">· {f.tapel}</span>
+          Nama kelas: <b className="text-lg text-ajarin-600">{nama || "–"}</b> <span className="text-tinta-500">· {f.tapel}</span>
         </p>
         <button type="submit" disabled={sibuk} className="btn-utama py-3">
           {sibuk ? 'Menyimpan...' : 'Tambah kelas'}

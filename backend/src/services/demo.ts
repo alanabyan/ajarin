@@ -141,6 +141,8 @@ export async function siapkanAkunDemo() {
   if (ada) {
     await perbaruiFormatDemo(ada.id);
     await lengkapiDataDemo(ada.id);
+    // Akun demo versi lama masih berjenjang dan bermapel; akun sekarang bersifat umum.
+    if (ada.jenjang || ada.mapel) return prisma.user.update({ where: { id: ada.id }, data: { jenjang: null, mapel: null } });
     return ada;
   }
   const user = await buatDataDasarDemo();
@@ -154,8 +156,6 @@ async function buatDataDasarDemo() {
       nama: 'Bu Siti (Akun Demo)',
       email: EMAIL_DEMO,
       passwordHash: await bcrypt.hash(randomBytes(24).toString('hex'), 10),
-      jenjang: 'SMP',
-      mapel: 'Matematika',
       sekolah: 'SMP Negeri Contoh',
       emailTerverifikasi: true,
     },

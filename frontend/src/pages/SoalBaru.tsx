@@ -1,6 +1,7 @@
 import { FormEvent, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Header, Kolom, PeringatanAI, Pesan, PilihMapel, TombolKembali, propsKontrol } from '../components/ui';
+import { Header, Kolom, PeringatanAI, Pesan, TombolKembali, propsKontrol } from '../components/ui';
+import { PilihMapel } from '../components/PilihCari';
 import api, { kodeError, kolomError, pesanError } from '../lib/api';
 import { JENJANG, KELAS_PER_JENJANG, MAPEL_PER_JENJANG, fase } from '../lib/akademik';
 import { useAuth } from '../lib/auth';

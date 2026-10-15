@@ -1,7 +1,8 @@
 import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Markdown from '../components/Markdown';
-import { Kolom, PeringatanAI, Pesan, PilihMapel, TombolKembali, propsKontrol } from '../components/ui';
+import { Kolom, PeringatanAI, Pesan, TombolKembali, propsKontrol } from '../components/ui';
+import { PilihMapel } from '../components/PilihCari';
 import api, { kodeError, kolomError, pesanError, postAlir } from '../lib/api';
 import { JENJANG, KELAS_PER_JENJANG, MAPEL_PER_JENJANG, MENIT_PER_JP, fase, jenjangDariKelas, semesterSekarang } from '../lib/akademik';
 import { useJaringan } from '../lib/offline/jaringan';
@@ -181,7 +182,7 @@ export default function ModulBaru() {
       atur('kelasId', '');
       return;
     }
-    const jenjang = jenjangDariKelas(k.tingkat, k.jurusan, user?.jenjang ?? 'SMP');
+    const jenjang = jenjangDariKelas(k.tingkat, k.jurusan, user?.jenjang ?? null);
     setF((lama) => ({
       ...lama,
       kelasId: k.id,

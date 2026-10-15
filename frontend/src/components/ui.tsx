@@ -1,6 +1,4 @@
-import { ReactNode, SelectHTMLAttributes, useState } from 'react';
-import { MAPEL_PER_JENJANG } from '../lib/akademik';
-import type { Jenjang } from '../types';
+import { ReactNode, SelectHTMLAttributes } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 export const NAMA_APP = 'AJARIN';
@@ -123,7 +121,7 @@ export function useCari(): string {
   return (sp.get('q') ?? '').trim().toLowerCase();
 }
 
-type NamaIkon = 'beranda' | 'modul' | 'soal' | 'kelas' | 'dampak' | 'cari' | 'hapus' | 'plus' | 'panah' | 'kanan' | 'menu' | 'bawah' | 'keluar' | 'bantuan' | 'kiri';
+type NamaIkon = 'beranda' | 'modul' | 'soal' | 'kelas' | 'dampak' | 'cari' | 'hapus' | 'plus' | 'panah' | 'kanan' | 'menu' | 'bawah' | 'keluar' | 'bantuan' | 'kiri' | 'profil';
 
 export function Ikon({ nama, className = 'h-5 w-5' }: { nama: NamaIkon; className?: string }) {
   const gambar: Record<NamaIkon, ReactNode> = {
@@ -172,6 +170,12 @@ export function Ikon({ nama, className = 'h-5 w-5' }: { nama: NamaIkon; classNam
     panah: <path d="M3 12h18m-5-5 5 5-5 5" />,
     kanan: <path d="m9 6 6 6-6 6" />,
     kiri: <path d="m15 6-6 6 6 6" />,
+    profil: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </>
+    ),
     menu: <path d="M4 6h16M4 12h16M4 18h16" />,
     bawah: <path d="m6 9 6 6 6-6" />,
     keluar: (
@@ -257,67 +261,6 @@ export function propsKontrol(id: string, galat?: string, petunjuk?: boolean) {
     'aria-describedby': galat ? `${id}-galat` : petunjuk ? `${id}-petunjuk` : undefined,
     className: `input ${galat ? 'border-merah focus:border-merah focus:ring-merah/20' : ''}`,
   };
-}
-
-const LAINNYA = '__lainnya__';
-
-/** Dropdown mata pelajaran sesuai jenjang, dengan "Lainnya" untuk mengetik sendiri. */
-export function PilihMapel({
-  id,
-  jenjang,
-  value,
-  onChange,
-  galat,
-}: {
-  id: string;
-  jenjang: Jenjang;
-  value: string;
-  onChange: (v: string) => void;
-  galat?: string;
-}) {
-  const daftar = MAPEL_PER_JENJANG[jenjang];
-  const [ketik, setKetik] = useState(() => value !== '' && !daftar.includes(value));
-  const lain = ketik || (value !== '' && !daftar.includes(value));
-  const p = propsKontrol(id, galat);
-  return (
-    <div className="space-y-2">
-      <select
-        {...p}
-        required
-        value={lain ? LAINNYA : value}
-        onChange={(e) => {
-          if (e.target.value === LAINNYA) {
-            setKetik(true);
-            onChange('');
-          } else {
-            setKetik(false);
-            onChange(e.target.value);
-          }
-        }}
-        className={`${p.className} ${value || lain ? '' : 'text-[#999]'}`}
-      >
-        <option value="" disabled>
-          Pilih mata pelajaran
-        </option>
-        {daftar.map((m) => (
-          <option key={m}>{m}</option>
-        ))}
-        <option value={LAINNYA}>Lainnya (ketik sendiri)</option>
-      </select>
-      {lain && (
-        <input
-          aria-label="Nama mata pelajaran lainnya"
-          required
-          minLength={2}
-          maxLength={80}
-          placeholder="Tulis nama mata pelajaran"
-          className={p.className}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )}
-    </div>
-  );
 }
 
 /**

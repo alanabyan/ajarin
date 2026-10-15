@@ -1,5 +1,5 @@
 ﻿import { ReactNode, useEffect, useRef, useState } from 'react';
-import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { offline } from '../lib/api';
 import { useJaringan } from '../lib/offline/jaringan';
@@ -75,10 +75,20 @@ function MenuAkun({ inisial, onPanduan, onKeluar }: { inisial: string; onPanduan
           <div className="border-b border-tinta-100 px-4 py-3">
             <p className="truncate font-bold text-tinta-900">{user?.nama}</p>
             <p className="truncate text-xs text-tinta-500">{user?.email}</p>
-            <p className="mt-1 text-xs text-tinta-500">
-              {user?.jenjang} · {user?.mapel}
-            </p>
+            {user?.sekolah ? (
+              <p className="mt-1 truncate text-xs text-tinta-500">{user.sekolah}</p>
+            ) : (
+              <p className="mt-1 text-xs italic text-tinta-300">Nama sekolah belum diisi</p>
+            )}
           </div>
+          <Link
+            to="/profil"
+            role="menuitem"
+            onClick={() => setBuka(false)}
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-semibold text-tinta-900 hover:bg-ajarin-50"
+          >
+            <Ikon nama="profil" className="h-5 w-5 text-ajarin-500" /> Profil saya
+          </Link>
           <button
             type="button"
             role="menuitem"

@@ -19,8 +19,9 @@ model User {
   nama         String
   email        String   @unique
   passwordHash String
-  jenjang      Jenjang
-  mapel        String
+  // Jenjang dan mapel tidak diminta lagi saat daftar (akun bersifat umum); akun lama tetap menyimpannya.
+  jenjang      Jenjang?
+  mapel        String?
   sekolah      String?
   createdAt    DateTime @default(now())
 

@@ -5,8 +5,9 @@ export interface User {
   id: string;
   nama: string;
   email: string;
-  jenjang: Jenjang;
-  mapel: string;
+  /** Hanya akun lama; akun baru bersifat umum (tanpa jenjang dan mapel). */
+  jenjang: Jenjang | null;
+  mapel: string | null;
   sekolah: string | null;
 }
 

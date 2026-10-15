@@ -28,7 +28,54 @@ export function fase(kelas: string): string {
   return 'F';
 }
 
+/** Jenjang dari tingkat kelas. X-XII bisa SMA atau SMK: memakai jenjang akun bila ada, selain itu SMA. */
+export function jenjangDariTingkat(tingkat: string, cadangan?: Jenjang | null): Jenjang {
+  if (KELAS_PER_JENJANG.SD.includes(tingkat)) return 'SD';
+  if (KELAS_PER_JENJANG.SMP.includes(tingkat)) return 'SMP';
+  return cadangan === 'SMK' ? 'SMK' : 'SMA';
+}
+
 export const kelasCocok = (jenjang: Jenjang, kelas: string) => KELAS_PER_JENJANG[jenjang].includes(kelas);
+
+// --- Mata pelajaran ------------------------------------------------------------------------------------------
+
+const MAPEL_UMUM = ['Pendidikan Agama dan Budi Pekerti', 'Pendidikan Pancasila', 'Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'PJOK'];
+
+/** Mata pelajaran Kurikulum Merdeka semua jenjang (cermin MAPEL_PER_JENJANG di frontend). */
+export const MAPEL_RESMI = [
+  ...new Set([
+    ...MAPEL_UMUM,
+    'IPAS',
+    'Seni Musik',
+    'Seni Rupa',
+    'Seni Tari',
+    'Seni Teater',
+    'Muatan Lokal',
+    'IPA',
+    'IPS',
+    'Informatika',
+    'Seni Budaya',
+    'Prakarya',
+    'Fisika',
+    'Kimia',
+    'Biologi',
+    'Ekonomi',
+    'Sosiologi',
+    'Geografi',
+    'Sejarah',
+    'Antropologi',
+    'Matematika Tingkat Lanjut',
+    'Bahasa Inggris Tingkat Lanjut',
+    'Projek IPAS',
+    'Dasar-dasar Program Keahlian',
+    'Konsentrasi Keahlian',
+    'Projek Kreatif dan Kewirausahaan',
+    'Mata Pelajaran Pilihan',
+  ]),
+];
+
+/** Nama resmi dari ketikan dengan huruf besar/kecil berbeda ("matematika" -> "Matematika"), atau null. */
+export const mapelResmi = (m: string) => MAPEL_RESMI.find((x) => x.toLowerCase() === m.trim().toLowerCase()) ?? null;
 
 // --- Nama kelas baku ---------------------------------------------------------------------------------------
 
@@ -50,6 +97,9 @@ export function tapelValid(t: string): boolean {
 // --- Siswa --------------------------------------------------------------------------------------------------
 
 /** Nama orang: huruf (termasuk beraksen), spasi, titik, koma, apostrof, tanda hubung. */
+/** Maksimal siswa sekali tambah (impor Excel/CSV atau tempel dari spreadsheet). */
+export const BATAS_IMPOR_SISWA = 60;
+
 export const NAMA_ORANG = /^[\p{L} .,'-]{2,100}$/u;
 /** NIS/NISN: angka, boleh dipisah titik, garis miring, atau tanda hubung (mis. 212210/125.093); 4-30 karakter. */
 export const NIS_VALID = /^[0-9](?:[0-9./-]{2,28})[0-9]$/;

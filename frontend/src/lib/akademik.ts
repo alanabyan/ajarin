@@ -28,6 +28,9 @@ export function fase(kelas: string): string {
   return 'F';
 }
 
+/** Maksimal siswa sekali tambah lewat Excel/CSV atau tempel dari spreadsheet (sama dengan server). */
+export const BATAS_IMPOR_SISWA = 60;
+
 export const NAMA_ORANG = /^[\p{L} .,'-]{2,100}$/u;
 export const NIS_VALID = /^[0-9](?:[0-9./-]{2,28})[0-9]$/;
 
@@ -129,7 +132,7 @@ export const MAPEL_PER_JENJANG: Record<Jenjang, string[]> = {
  * Jenjang dari kelas yang sudah dibuat guru. Kelas X-XII bisa SMA atau SMK: ditentukan dari jurusannya,
  * lalu dari jenjang akun guru.
  */
-export function jenjangDariKelas(tingkat: string, jurusan: string | null | undefined, jenjangGuru: Jenjang): Jenjang {
+export function jenjangDariKelas(tingkat: string, jurusan: string | null | undefined, jenjangGuru: Jenjang | null): Jenjang {
   if (KELAS_PER_JENJANG.SD.includes(tingkat)) return 'SD';
   if (KELAS_PER_JENJANG.SMP.includes(tingkat)) return 'SMP';
   if (jurusan && JURUSAN_SMK.some(([k]) => k === jurusan)) return 'SMK';
@@ -159,3 +162,6 @@ export function materiDariModul(konten: string, topik: string): string[] {
   const daftar = hasil.length ? hasil : topik.split(/[,;]/).map((t) => t.trim());
   return [...new Set(daftar.filter((t) => t.length >= 3))].slice(0, 24);
 }
+
+/** Semua mata pelajaran resmi lintas jenjang, tanpa duplikat (cermin MAPEL_RESMI di backend). */
+export const MAPEL_RESMI = [...new Set(Object.values(MAPEL_PER_JENJANG).flat())];

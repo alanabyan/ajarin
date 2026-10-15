@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PilihCari from './PilihCari';
 import { Pesan, angka } from './ui';
 import api, { pesanError } from '../lib/api';
+import { MAPEL_RESMI } from '../lib/akademik';
 import { mintaTokenGoogle } from '../lib/google';
 import type { JenisNilai } from '../types';
 
@@ -130,17 +132,14 @@ export default function ImporNilai({ setId, mapel, namaKelas }: { setId: string;
           <label htmlFor="imp-mapel" className="label">
             Mata pelajaran
           </label>
-          <input id="imp-mapel" className="input" value={mapelNilai} onChange={(e) => setMapelNilai(e.target.value)} />
+          {/* Dropdown, bukan ketik bebas: mapel set soal ini atau mapel resmi (batas UAS dihitung per mapel). */}
+          <PilihCari id="imp-mapel" value={mapelNilai} onChange={setMapelNilai} grup={[{ opsi: [...new Set([mapel, ...MAPEL_RESMI])] }]} />
         </div>
         <div>
           <label htmlFor="imp-jenis" className="label">
             Jenis
           </label>
-          <select id="imp-jenis" className="input" value={jenis} onChange={(e) => setJenis(e.target.value as JenisNilai)}>
-            {JENIS.map((j) => (
-              <option key={j}>{j}</option>
-            ))}
-          </select>
+          <PilihCari cari={false} id="imp-jenis" value={jenis} onChange={(v) => setJenis(v as JenisNilai)} grup={[{ opsi: JENIS }]} />
         </div>
         <div className="flex items-end">
           <button type="button" onClick={ambil} disabled={sibuk} className="btn-utama w-full">

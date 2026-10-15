@@ -1,7 +1,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Kosong, Memuat, Pesan, SelectPil, TombolKembali } from '../components/ui';
-import { NAMA_ORANG, NIS_VALID } from '../lib/akademik';
+import { Kosong, Memuat, Pesan, TombolKembali } from '../components/ui';
+import { BATAS_IMPOR_SISWA, MAPEL_RESMI, NAMA_ORANG, NIS_VALID } from '../lib/akademik';
+import PilihCari from '../components/PilihCari';
 import { BilahTerpilih, Centang, CentangSemua, usePilihan } from '../components/PilihSiswa';
 import api, { pesanError, unduh } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -59,6 +60,8 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
   const inputBerkas = useRef<HTMLInputElement>(null);
   // Berkas yang sudah dibaca menggantikan isian teks.
   const baris = berkas ? berkas.siswa : parseSiswa(teks);
+  const kebanyakan = baris.length > BATAS_IMPOR_SISWA;
+  const pesanKebanyakan = `Maksimal ${BATAS_IMPOR_SISWA} siswa sekali tambah; daftar ini berisi ${baris.length} siswa. Bagi menjadi beberapa bagian.`;
 
   async function pilihBerkas(f: File | undefined) {
     if (!f) return;
@@ -75,19 +78,14 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
   }
 
   async function kirimSiswa(daftar: { nama: string; nis: string }[]) {
-    // Server menerima maksimal 200 siswa per permintaan.
-    let ditambahkan = 0;
-    let dilewati = 0;
-    for (let i = 0; i < daftar.length; i += 200) {
-      const r = await api.post(`/kelas/${kelasId}/siswa`, { siswa: daftar.slice(i, i + 200) });
-      ditambahkan += r.data.ditambahkan;
-      dilewati += r.data.dilewati;
-    }
+    const r = await api.post(`/kelas/${kelasId}/siswa`, { siswa: daftar });
+    const { ditambahkan, dilewati } = r.data as { ditambahkan: number; dilewati: number };
     setInfo(`${ditambahkan} siswa ditambahkan${dilewati ? `, ${dilewati} dilewati karena NIS sudah ada` : ''}.`);
     await muat();
   }
 
   async function tambahBanyak() {
+    if (kebanyakan) return setGalat(pesanKebanyakan);
     setSibuk(true);
     setGalat('');
     setInfo('');
@@ -156,7 +154,9 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
             <h2 id="judul-sekaligus" className="text-xl font-bold text-hijau">
               Tambah siswa sekaligus
             </h2>
-            <p className="mt-1 text-xs text-tinta-400">Unggah daftar dari Excel atau CSV, atau tempel dari spreadsheet. Kolom: Nama dan NIS.</p>
+            <p className="mt-1 text-xs text-tinta-400">
+              Unggah daftar dari Excel atau CSV, atau tempel dari spreadsheet. Kolom: Nama dan NIS. Maksimal {BATAS_IMPOR_SISWA} siswa sekali tambah.
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <button type="button" onClick={unduhTemplatSiswa} className="text-sm font-semibold text-hijau hover:underline">
@@ -185,6 +185,11 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
               {berkas.nama}: {berkas.siswa.length} siswa terbaca
               {berkas.dilewati > 0 && <span className="font-normal text-tinta-500"> ({berkas.dilewati} baris dilewati karena nama atau NIS kosong)</span>}
             </p>
+            {kebanyakan && (
+              <div className="mt-2">
+                <Pesan nada="galat">{pesanKebanyakan}</Pesan>
+              </div>
+            )}
             <ul className="mt-2 space-y-0.5 text-tinta-400">
               {berkas.siswa.slice(0, 5).map((s, i) => (
                 <li key={i} className="truncate">
@@ -194,7 +199,7 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
             </ul>
             {berkas.siswa.length > 5 && <p className="mt-1 text-xs text-tinta-500">dan {berkas.siswa.length - 5} siswa lainnya</p>}
             <div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" onClick={tambahBanyak} disabled={sibuk || baris.length === 0} className="btn bg-hijau py-2 text-white hover:opacity-90">
+              <button type="button" onClick={tambahBanyak} disabled={sibuk || baris.length === 0 || kebanyakan} className="btn bg-hijau py-2 text-white hover:opacity-90">
                 {sibuk ? 'Menambahkan...' : `Tambah ${baris.length} siswa`}
               </button>
               <button type="button" onClick={() => setBerkas(null)} className="btn-bahaya py-2">
@@ -217,8 +222,13 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
                 value={teks}
                 onChange={(e) => setTeks(e.target.value)}
               />
-              <p className="text-xs text-tinta-500">Satu baris per siswa (Nama, NIS). Bisa ditempel langsung dari dua kolom spreadsheet. NIS yang sudah ada dilewati.</p>
-              <button type="button" onClick={tambahBanyak} disabled={baris.length === 0 || sibuk} className="btn bg-hijau py-2 text-white hover:opacity-90">
+              <p className={`text-xs ${kebanyakan ? 'font-semibold text-merah' : 'text-tinta-500'}`}>
+                {kebanyakan
+                  ? pesanKebanyakan
+                  : `Satu baris per siswa (Nama, NIS), maksimal ${BATAS_IMPOR_SISWA} siswa. Bisa ditempel langsung dari dua kolom spreadsheet. NIS yang sudah ada dilewati.`}
+                {baris.length > 0 && !kebanyakan && ` Terbaca ${baris.length}/${BATAS_IMPOR_SISWA}.`}
+              </p>
+              <button type="button" onClick={tambahBanyak} disabled={baris.length === 0 || sibuk || kebanyakan} className="btn bg-hijau py-2 text-white hover:opacity-90">
                 {sibuk ? 'Menambahkan...' : `Tambah ${baris.length || ''} siswa`}
               </button>
             </div>
@@ -300,7 +310,7 @@ function TabNilai({
   kelasId: string;
   siswa: Siswa[];
   muat: () => Promise<void>;
-  mapelOpsi: string[];
+  mapelOpsi: { kelas: string[]; khusus: string[]; resmi: string[] };
   kolomRekap: string[];
 }) {
   const [jenis, setJenis] = useState<JenisNilai | ''>('');
@@ -361,29 +371,29 @@ function TabNilai({
           Daftar Input Nilai
         </h2>
         <div className="flex flex-col gap-[7px] sm:flex-row sm:flex-wrap sm:items-center">
-          <div className="sm:w-56">
-            <input
-              aria-label="Mata pelajaran"
-              list="opsi-mapel"
-              placeholder="Tulis Mata Pelajaran"
-              className="input-pil"
-              value={mapel}
-              onChange={(e) => setMapel(e.target.value)}
-            />
-            <datalist id="opsi-mapel">
-              {mapelOpsi.map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
-          </div>
-          <SelectPil aria-label="Jenis penilaian" className="sm:w-48" value={jenis} onChange={(e) => setJenis(e.target.value as JenisNilai)}>
-            <option value="" disabled>
-              Jenis Penilaian
-            </option>
-            {JENIS.map((j) => (
-              <option key={j}>{j}</option>
-            ))}
-          </SelectPil>
+          <PilihCari
+            varian="pil"
+            className="sm:w-64"
+            label="Mata pelajaran"
+            placeholder="Pilih Mata Pelajaran"
+            value={mapel}
+            onChange={setMapel}
+            grup={[
+              { label: 'Sudah dipakai di kelas ini', opsi: mapelOpsi.kelas },
+              { label: 'Mapel Anda', opsi: mapelOpsi.khusus },
+              { label: 'Mata pelajaran', opsi: mapelOpsi.resmi },
+            ]}
+          />
+          <PilihCari
+            cari={false}
+            varian="pil"
+            className="sm:w-48"
+            label="Jenis penilaian"
+            placeholder="Jenis Penilaian"
+            value={jenis}
+            onChange={(v) => setJenis(v as JenisNilai)}
+            grup={[{ opsi: JENIS }]}
+          />
           <input aria-label="Judul penilaian (opsional)" placeholder="Judul, mis. Bab 3 (opsional)" className="input-pil sm:w-56" value={judul} onChange={(e) => setJudul(e.target.value)} />
           <button type="button" onClick={simpan} disabled={sibuk || terisi.length === 0 || tidakValid || uasPenuh || !mapel.trim() || !jenis} className="btn-utama py-3">
             {sibuk ? 'Menyimpan...' : `Simpan ${terisi.length} Nilai`}
@@ -543,12 +553,14 @@ function TabRekap({ rekap, kelasId }: { rekap: Rekap; kelasId: string }) {
             Daftar Nama
           </h2>
           <div className="flex flex-col gap-[7px] sm:flex-row sm:flex-wrap sm:items-center">
-            <SelectPil aria-label="Pilih mata pelajaran" className="sm:w-60" value={mapel} onChange={(e) => setMapel(e.target.value)}>
-              <option value="">Semua Mata Pelajaran</option>
-              {daftarMapel.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </SelectPil>
+            <PilihCari
+              varian="pil"
+              className="sm:w-64"
+              label="Pilih mata pelajaran"
+              value={mapel}
+              onChange={setMapel}
+              grup={[{ opsi: [{ nilai: '', label: 'Semua Mata Pelajaran' }, ...daftarMapel] }]}
+            />
             <span
               className="inline-flex items-center justify-center rounded-[21px] border-[0.5px] border-[#CCCCCC] bg-tinta-50 px-4 py-2.5 text-sm font-semibold text-ajarin-600"
               title="KKM ditetapkan saat kelas dibuat dan tidak bisa diubah"
@@ -638,10 +650,27 @@ export default function KelasDetail() {
     void muat();
   }, [muat]);
 
+  // Mapel khusus guru (bukan daftar resmi) yang pernah dipakai di bank soal atau modul, mis. "Bahasa Jawa".
+  const [mapelKhusus, setMapelKhusus] = useState<string[]>([]);
+  useEffect(() => {
+    Promise.all([api.get('/soal'), api.get('/modul')])
+      .then(([s, m]) =>
+        setMapelKhusus([
+          ...(s.data.set as { mapel: string }[]).map((x) => x.mapel),
+          ...(m.data.modul as { mapel: string | null }[]).map((x) => x.mapel ?? ''),
+        ])
+      )
+      .catch(() => setMapelKhusus([]));
+  }, []);
+
+  // Pilihan mapel untuk input nilai: yang sudah dipakai di kelas ini, mapel khusus guru, lalu daftar resmi.
+  // Sengaja tidak bisa diketik bebas, supaya batas UAS per mapel tidak bisa diakali dengan nama mapel asal.
   const mapelOpsi = useMemo(() => {
-    const dariNilai = (rekap?.kolom ?? []).map(mapelDariKolom).filter(Boolean);
-    return [...new Set([user?.mapel ?? '', ...dariNilai].filter(Boolean))];
-  }, [rekap?.kolom, user?.mapel]);
+    const kelas = [...new Set((rekap?.kolom ?? []).map(mapelDariKolom).filter(Boolean))];
+    const khusus = [...new Set([user?.mapel ?? '', ...mapelKhusus].filter((m) => m && !kelas.includes(m) && !MAPEL_RESMI.includes(m)))];
+    const resmi = MAPEL_RESMI.filter((m) => !kelas.includes(m));
+    return { kelas, khusus, resmi };
+  }, [rekap?.kolom, user?.mapel, mapelKhusus]);
 
   if (!rekap) return galat ? <Pesan nada="galat">{galat}</Pesan> : <Memuat />;
 

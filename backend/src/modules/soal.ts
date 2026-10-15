@@ -8,7 +8,7 @@ import { buatSoal } from '../services/ai';
 import { ambilJawaban, buatKuis, perbaruiDaftarSiswa } from '../services/googleForms';
 import { simpanNilaiKelas } from '../services/nilai';
 import { pastikanIsianSesuai } from '../services/validasiIsian';
-import { JENJANG, SEMUA_TINGKAT } from '../utils/akademik';
+import { JENJANG, SEMUA_TINGKAT, jenjangDariTingkat } from '../utils/akademik';
 import { bangunPilihan } from '../utils/pilihanSiswa';
 import { excelKahoot, excelSoalLengkap, waktuKahootValid } from '../utils/excel';
 import { wordSoal } from '../utils/word';
@@ -119,7 +119,7 @@ router.post(
     const materi = [...new Set(lemah.map((b) => b.materi))].join('; ');
     const hasil = await buatSoal({
       mapel: set.mapel,
-      jenjang: user?.jenjang ?? 'SMP',
+      jenjang: jenjangDariTingkat(set.kelas, user?.jenjang),
       kelas: set.kelas,
       materi,
       tingkat: 'mudah hingga sedang',

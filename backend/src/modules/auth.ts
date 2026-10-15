@@ -9,37 +9,44 @@ import { authLimiter, kirimUlangLimiter } from '../middleware/limits';
 import { requireAuth } from '../middleware/auth';
 import { siapkanAkunDemo } from '../services/demo';
 import { kirimEmailVerifikasi } from '../services/email';
-import { JENJANG } from '../utils/akademik';
 
 const router = Router();
 
 const BERLAKU_TOKEN = 24 * 60 * 60 * 1000;
 
+// Batas panjang isian akun; frontend memakai angka yang sama (src/pages/Akun.tsx).
+export const BATAS = { nama: 80, email: 100, sekolah: 100 };
+
+const namaSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(BATAS.nama)
+  .regex(/^[\p{L} .,'-]+$/u, 'Nama hanya boleh berisi huruf, spasi, titik, koma, apostrof, dan tanda hubung.');
+
+// Nama sekolah opsional; kosong disimpan sebagai null.
+const sekolahSchema = z
+  .string()
+  .trim()
+  .max(BATAS.sekolah)
+  .regex(/^[\p{L}0-9 .,'()/&-]*$/u, 'Nama sekolah mengandung karakter yang tidak diizinkan.')
+  .optional()
+  .transform((s) => s || null);
+
+// Daftar bersifat umum: tanpa jenjang dan mata pelajaran.
 const daftarSchema = z.object({
-  nama: z
-    .string()
-    .trim()
-    .min(2)
-    .max(100)
-    .regex(/^[\p{L} .,'-]+$/u, 'Nama hanya boleh berisi huruf, spasi, titik, koma, apostrof, dan tanda hubung.'),
-  email: z.string().trim().toLowerCase().email().max(120),
+  nama: namaSchema,
+  email: z.string().trim().toLowerCase().email().max(BATAS.email),
   password: z
     .string()
     .min(8, 'Kata sandi minimal 8 karakter.')
     .max(72, 'Kata sandi maksimal 72 karakter.')
     .regex(/[A-Za-z]/, 'Kata sandi harus mengandung huruf.')
     .regex(/[0-9]/, 'Kata sandi harus mengandung angka.'),
-  jenjang: z.enum(JENJANG),
-  mapel: z
-    .string()
-    .trim()
-    .min(2)
-    .max(80)
-    .regex(/^[\p{L}0-9 &(),./-]+$/u, 'Nama mata pelajaran mengandung karakter yang tidak diizinkan.'),
-  sekolah: z.string().trim().max(120).optional(),
+  sekolah: sekolahSchema,
 });
 
-const publik = (u: { id: string; nama: string; email: string; jenjang: string; mapel: string; sekolah: string | null }) => ({
+const publik = (u: { id: string; nama: string; email: string; jenjang: string | null; mapel: string | null; sekolah: string | null }) => ({
   id: u.id,
   nama: u.nama,
   email: u.email,
@@ -76,7 +83,7 @@ router.post(
     }
     const { token, data: dataToken } = tokenBaru();
     const user = await prisma.user.create({
-      data: { ...data, sekolah: data.sekolah || null, passwordHash: await bcrypt.hash(password, 10), ...dataToken },
+      data: { ...data, passwordHash: await bcrypt.hash(password, 10), ...dataToken },
     });
     try {
       await kirimEmailVerifikasi(user.email, user.nama, token);
@@ -165,6 +172,20 @@ router.get(
   handle(async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: uid(req) } });
     if (!user) throw new HttpError(401, 'Akun tidak ditemukan.');
+    res.json({ user: publik(user) });
+  })
+);
+
+// Ubah profil: nama dan nama sekolah. Email tidak bisa diubah di sini karena dipakai untuk masuk dan sudah diverifikasi.
+router.patch(
+  '/saya',
+  requireAuth,
+  handle(async (req, res) => {
+    const data = z.object({ nama: namaSchema.optional(), sekolah: sekolahSchema }).parse(req.body);
+    const user = await prisma.user.update({
+      where: { id: uid(req) },
+      data: { ...(data.nama ? { nama: data.nama } : {}), ...('sekolah' in req.body ? { sekolah: data.sekolah } : {}) },
+    });
     res.json({ user: publik(user) });
   })
 );

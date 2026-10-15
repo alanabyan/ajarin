@@ -1,13 +1,11 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api, { offline } from './api';
-import type { Jenjang, User } from '../types';
+import type { User } from '../types';
 
 export interface DataDaftar {
   nama: string;
   email: string;
   password: string;
-  jenjang: Jenjang;
-  mapel: string;
   sekolah?: string;
 }
 
@@ -18,6 +16,8 @@ interface AuthValue {
   /** Mendaftar tanpa masuk: akun harus diverifikasi lewat email dulu. Mengembalikan email terdaftar. */
   daftar: (data: DataDaftar) => Promise<string>;
   masukDemo: () => Promise<void>;
+  /** Mengubah nama dan/atau nama sekolah akun yang sedang masuk. */
+  perbaruiProfil: (data: { nama?: string; sekolah?: string }) => Promise<void>;
   keluar: () => void;
 }
 
@@ -75,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       masuk: async (email, password) => terima((await api.post('/auth/masuk', { email, password })).data),
       daftar: async (data) => (await api.post('/auth/daftar', data)).data.email as string,
       masukDemo: async () => terima((await api.post('/auth/demo')).data),
+      perbaruiProfil: async (data) => setUser((await api.patch('/auth/saya', data)).data.user),
       keluar: () => {
         try {
           localStorage.removeItem('token');
