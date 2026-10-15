@@ -42,6 +42,8 @@ const buatSchema = z.object({
   tingkat: z.enum(['mudah', 'sedang', 'sulit']),
   jumlah: z.number().int().min(1).max(20),
   abaikanPeringatan: z.boolean().optional(),
+  /** Diisi bila dibuat dari halaman modul: jenjang dan kelas soal harus sama dengan modulnya. */
+  modulId: z.string().uuid().optional(),
 });
 
 router.post(
@@ -49,7 +51,16 @@ router.post(
   aiLimiter,
   kuotaAI,
   handle(async (req, res) => {
-    const { judul, abaikanPeringatan, ...input } = buatSchema.parse(req.body);
+    const { judul, abaikanPeringatan, modulId, ...input } = buatSchema.parse(req.body);
+    if (modulId) {
+      const modul = await prisma.modul.findFirst({ where: { id: modulId, userId: uid(req) }, select: { jenjang: true, kelas: true } });
+      if (!modul) throw new HttpError(404, 'Modul asal soal tidak ditemukan.');
+      if (modul.jenjang !== input.jenjang || modul.kelas !== input.kelas) {
+        throw new HttpError(400, `Soal dari modul ini harus untuk ${modul.jenjang} kelas ${modul.kelas}, sama dengan modulnya.`, {
+          kolom: { kelas: `Mengikuti modul: ${modul.jenjang} kelas ${modul.kelas}.` },
+        });
+      }
+    }
     await pastikanIsianSesuai({
       jenis: 'soal',
       jenjang: input.jenjang,

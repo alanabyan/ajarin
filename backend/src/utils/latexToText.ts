@@ -1,3 +1,4 @@
+import { perbaikiLatex } from './rumus';
 // Mengubah teks yang berisi LaTeX ($...$ / $$...$$) menjadi teks biasa berbasis Unicode
 // supaya terbaca di Excel (yang tidak bisa merender LaTeX).
 // Contoh: "$\frac{1}{10}\begin{pmatrix}6 & -7\\ -2 & 4\end{pmatrix}$" -> "1/10(6, -7; -2, 4)"
@@ -261,7 +262,11 @@ function convert(input: string): string {
  */
 export function latexToText(raw: string | null | undefined): string {
   if (!raw) return '';
-  const text = String(raw).replace(/\*\*/g, '');
+  // Soal lama bisa menyimpan LaTeX yang garis miringnya hilang ("70^circ"); dipulihkan dulu.
+  const text = perbaikiLatex(String(raw))
+    .replace(/\*\*/g, '')
+    // Derajat: 70^\circ, 70^{\circ}, 70^\degree -> 70° (bukan "70^°").
+    .replace(/\^\s*\{?\s*\\(?:circ|degree)\s*\}?/g, '°');
 
   const mathPattern = /\$\$([\s\S]+?)\$\$|\$([^$]+?)\$|\\\(([\s\S]+?)\\\)|\\\[([\s\S]+?)\\\]/g;
   let result = '';

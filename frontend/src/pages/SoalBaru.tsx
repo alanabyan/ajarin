@@ -91,7 +91,7 @@ export default function SoalBaru() {
     setSibuk(true);
     setPeringatan(false);
     try {
-      const res = await api.post('/soal/buat', { ...f, abaikanPeringatan: abaikanPeringatan || undefined });
+      const res = await api.post('/soal/buat', { ...f, modulId: dariModul?.id, abaikanPeringatan: abaikanPeringatan || undefined });
       navigate(`/soal/${res.data.set.id}`);
     } catch (err) {
       const k = kolomError(err);
@@ -170,19 +170,32 @@ export default function SoalBaru() {
           <input {...propsKontrol('judul', kolom.judul)} maxLength={150} placeholder="Contoh: Kuis Persamaan Linear" value={f.judul} onChange={(e) => atur('judul', e.target.value)} />
         </Kolom>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Kolom id="jenjang" label="Jenjang">
-            <select {...propsKontrol('jenjang')} value={f.jenjang} onChange={(e) => ubahJenjang(e.target.value as Jenjang)}>
+          {/* Dari modul: jenjang dan kelas mengikuti modul, supaya soal sesuai tingkat modulnya. */}
+          <Kolom id="jenjang" label="Jenjang" petunjuk={dariModul ? 'Mengikuti modul.' : undefined}>
+            <select
+              {...propsKontrol('jenjang', undefined, !!dariModul)}
+              disabled={!!dariModul}
+              value={f.jenjang}
+              onChange={(e) => ubahJenjang(e.target.value as Jenjang)}
+              className={`${propsKontrol('jenjang').className} disabled:cursor-not-allowed disabled:bg-tinta-50 disabled:text-tinta-500`}
+            >
               {JENJANG.map((j) => (
                 <option key={j}>{j}</option>
               ))}
             </select>
           </Kolom>
-          <Kolom id="kelas" label="Kelas" galat={kolom.kelas} petunjuk={faseKelas && `Fase ${faseKelas}`}>
+          <Kolom
+            id="kelas"
+            label="Kelas"
+            galat={kolom.kelas}
+            petunjuk={dariModul ? `Fase ${faseKelas} · mengikuti modul. Untuk kelas lain, pilih "Isi manual tanpa modul".` : faseKelas && `Fase ${faseKelas}`}
+          >
             <select
               {...propsKontrol('kelas', kolom.kelas, !!faseKelas)}
+              disabled={!!dariModul}
               value={f.kelas}
               onChange={(e) => atur('kelas', e.target.value)}
-              className={`${propsKontrol('kelas', kolom.kelas).className} ${f.kelas ? '' : 'text-[#999]'}`}
+              className={`${propsKontrol('kelas', kolom.kelas).className} ${f.kelas ? '' : 'text-[#999]'} disabled:cursor-not-allowed disabled:bg-tinta-50 disabled:text-tinta-500`}
             >
               <option value="" disabled>
                 Pilih kelas

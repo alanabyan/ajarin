@@ -1,4 +1,4 @@
-import { tanpaRumus } from './rumus';
+import { rapikanRumus, tanpaRumus } from './rumus';
 import type { Jenjang } from '../types';
 
 // Cermin dari backend/src/utils/akademik.ts; ubah keduanya bersamaan.
@@ -146,7 +146,7 @@ export function jenjangDariKelas(tingkat: string, jurusan: string | null | undef
  * atau bila tidak ada tabel, cakupan materi yang dipisah koma.
  */
 export function materiDariModul(konten: string, topik: string): string[] {
-  const baris = konten.split(/\r?\n/);
+  const baris = rapikanRumus(konten).split(/\r?\n/);
   const sel = (b: string) => b.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
   const hasil: string[] = [];
   for (let i = 0; i < baris.length; i++) {

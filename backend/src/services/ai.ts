@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { HttpError } from '../lib/http';
 import { fase, type MasalahIsian } from '../utils/akademik';
+import { perbaikiLatex } from '../utils/rumus';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = () => process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
@@ -388,7 +389,8 @@ export async function buatSoal(i: InputSoal): Promise<ButirAI[]> {
   const user = `Buat ${i.jumlah} soal pilihan ganda ${i.mapel} untuk ${i.jenjang} kelas ${i.kelas}, materi "${i.materi}", tingkat kesulitan ${i.tingkat}.${remedial}
 Aturan: tepat 4 pilihan jawaban yang berbeda dan masuk akal, hanya satu yang benar, kunci acak di antara A-D, pembahasan singkat dan benar.
 Format: {"soal":[{"pertanyaan":"...","pilihan":["...","...","...","..."],"kunciIndex":0,"pembahasan":"..."}]}
-kunciIndex adalah indeks (0-3) jawaban benar pada array pilihan.`;
+kunciIndex adalah indeks (0-3) jawaban benar pada array pilihan.
+Karena jawabannya JSON, setiap garis miring LaTeX WAJIB ditulis ganda di dalam string: "$70^\\\\circ$", "$\\\\frac{1}{2}$", "$3 \\\\times 4$".`;
 
   const mentah = await panggilGroq(system, user, true);
   let parsed: unknown;
@@ -403,7 +405,10 @@ kunciIndex adalah indeks (0-3) jawaban benar pada array pilihan.`;
   // Item rusak dibuang satu per satu supaya satu soal cacat tidak menggagalkan seluruh set.
   const valid = daftar.flatMap((d) => {
     const r = butirSchema.safeParse(d);
-    return r.success ? [r.data] : [];
+    if (!r.success) return [];
+    // LaTeX di dalam JSON sering kehilangan garis miringnya (\circ -> circ, \frac -> form feed); dipulihkan di sini.
+    const b = r.data;
+    return [{ ...b, pertanyaan: perbaikiLatex(b.pertanyaan), pilihan: b.pilihan.map(perbaikiLatex), pembahasan: perbaikiLatex(b.pembahasan) }];
   });
   if (valid.length === 0) throw new HttpError(502, 'AI tidak menghasilkan soal yang valid. Coba lagi.');
   const dipakai = valid.slice(0, i.jumlah);
