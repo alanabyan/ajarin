@@ -198,6 +198,7 @@ export default function SoalDetail() {
   return (
     <div>
       <Header
+        bertumpuk
         judul={set.judul}
         deskripsi={`${set.mapel} · kelas ${set.kelas} · ${set.butir.length} soal`}
         aksi={

@@ -3,7 +3,9 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
 export class HttpError extends Error {
   constructor(
     public status: number,
-    message: string
+    message: string,
+    /** Data tambahan untuk klien, mis. { kolom: { judul: 'pesan' } } atau { kode: 'BELUM_VERIFIKASI' }. */
+    public detail?: Record<string, unknown>
   ) {
     super(message);
   }

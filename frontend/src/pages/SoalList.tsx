@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Header, Ikon, Kosong, Memuat, Pesan, Sampul, tapelDari, useCari } from '../components/ui';
+import { cocok, teksSoal } from '../lib/cari';
 import api, { pesanError } from '../lib/api';
 import type { SetSoalRingkas } from '../types';
 
@@ -34,7 +35,7 @@ export default function SoalList() {
   }
 
   if (!daftar) return <Memuat />;
-  const tampil = daftar.filter((s) => `${s.judul} ${s.mapel}`.toLowerCase().includes(cari));
+  const tampil = daftar.filter((s) => cocok(teksSoal(s), cari));
 
   return (
     <div>

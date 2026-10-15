@@ -10,39 +10,64 @@ const JUDUL_REMEDIAL = `Remedial: ${JUDUL_KUIS}`;
 const HARI = 24 * 60 * 60 * 1000;
 const lalu = (hari: number) => new Date(Date.now() - hari * HARI);
 
-const MODUL = `## Identitas Modul
+const JUDUL_MODUL = 'Bilangan, Aljabar, dan Persamaan Linear';
+
+// Modul ajar berformat rencana semester (RPS): tabel rencana per pertemuan untuk satu semester.
+const MODUL = `## Identitas
+- Sekolah: SMP Negeri Contoh
 - Mata pelajaran: Matematika
-- Jenjang / kelas: SMP / VII
-- Alokasi waktu: 2 × 40 menit
+- Jenjang / kelas / fase: SMP / VII / Fase D
+- Semester: Ganjil
+- Jumlah pertemuan: 16
+- Alokasi waktu: 2 JP × 40 menit per pertemuan
+- Guru pengampu: Bu Siti
 
-## Tujuan Pembelajaran
-Peserta didik mampu menyelesaikan persamaan linear satu variabel dan menerapkannya pada masalah sehari-hari.
+## Deskripsi Singkat
+Semester ini membangun dasar bilangan dan aljabar: operasi bilangan bulat dan pecahan, perbandingan, bentuk aljabar, persamaan dan pertidaksamaan linear satu variabel, sampai aritmetika sosial. Pembelajaran berangkat dari masalah sehari-hari dan ditutup dengan proyek anggaran belanja kelas.
 
-## Pemahaman Bermakna
-Persamaan membantu kita menemukan nilai yang belum diketahui dari informasi yang ada, misalnya harga satuan barang.
+## Capaian Pembelajaran (CP)
+Di akhir Fase D, peserta didik dapat membaca, menulis, dan membandingkan bilangan bulat dan pecahan; menggunakan operasi aritmetika dan perbandingan untuk menyelesaikan masalah; serta menyatakan situasi ke dalam bentuk aljabar dan menyelesaikan persamaan dan pertidaksamaan linear satu variabel.
 
-## Kegiatan Pendahuluan (10 menit)
-- Guru mengajukan masalah kontekstual: harga 3 buku tulis ditambah sebuah pensil.
-- Guru menggali pengetahuan awal tentang variabel dan operasi bilangan.
+## Tujuan Pembelajaran (TP)
+1. TP-1: Melakukan operasi hitung bilangan bulat dan pecahan serta menggunakannya pada masalah kontekstual.
+2. TP-2: Menyelesaikan masalah perbandingan senilai dan berbalik nilai.
+3. TP-3: Menyederhanakan bentuk aljabar dan melakukan operasi pada bentuk aljabar.
+4. TP-4: Menyelesaikan persamaan dan pertidaksamaan linear satu variabel, termasuk soal cerita.
+5. TP-5: Menerapkan aritmetika sosial (untung, rugi, diskon, pajak, bunga) dalam keputusan sehari-hari.
 
-## Kegiatan Inti (55 menit)
-- Mengamati contoh dan menyusun persamaan, misalnya $2x + 5 = 13$ (15 menit).
-- Diskusi kelompok menyelesaikan tiga kartu masalah (25 menit).
-- Presentasi dan tanggapan antar kelompok (15 menit).
+## Rencana Pembelajaran per Pertemuan
+| Pertemuan ke- | TP | Indikator Ketercapaian | Materi Pokok | Metode & Bentuk Pembelajaran (estimasi waktu) | Kriteria & Bentuk Penilaian | Bobot (%) |
+|---|---|---|---|---|---|---|
+| 1 | TP-1 | Menghitung penjumlahan dan pengurangan bilangan bulat dengan garis bilangan | Operasi bilangan bulat | Diskusi kelompok dengan garis bilangan (80 menit) | Ketepatan hitung; kuis 5 soal | 3 |
+| 2 | TP-1 | Menyelesaikan masalah suhu dan utang-piutang | Sifat operasi bilangan bulat | Problem based learning (80 menit) | Langkah penyelesaian; lembar kerja | 3 |
+| 3 | TP-1 | Mengubah dan mengoperasikan pecahan, desimal, persen | Pecahan dan desimal | Demonstrasi dan latihan berpasangan (80 menit) | Ketepatan konversi; tugas individu | 4 |
+| 4 | TP-2 | Menentukan nilai pada perbandingan senilai | Perbandingan senilai | Eksplorasi resep masakan (80 menit) | Ketepatan model perbandingan; lembar kerja | 4 |
+| 5 | TP-2 | Membedakan dan menyelesaikan perbandingan berbalik nilai | Perbandingan berbalik nilai | Diskusi kasus pekerja dan waktu (80 menit) | Ketepatan alasan; kuis 5 soal | 4 |
+| 6 | TP-3 | Mengidentifikasi variabel, koefisien, konstanta, suku sejenis | Unsur bentuk aljabar | Kartu aljabar dan tanya jawab (80 menit) | Ketepatan identifikasi; observasi | 3 |
+| 7 | TP-3 | Menjumlah, mengurang, dan mengalikan bentuk aljabar | Operasi bentuk aljabar | Latihan terbimbing (80 menit) | Ketepatan operasi; tugas individu | 4 |
+| 8 | TP-1–TP-3 | Mengerjakan soal TP-1 sampai TP-3 | Asesmen Tengah Semester | Tes tertulis (80 menit) | Skor tes pilihan ganda dan uraian | 20 |
+| 9 | TP-4 | Menentukan penyelesaian persamaan bentuk $ax + b = c$ | Persamaan linear: bentuk dasar | Timbangan seimbang (80 menit) | Ketepatan langkah; kuis 5 soal | 4 |
+| 10 | TP-4 | Menyelesaikan persamaan dua langkah, variabel di kedua ruas | Persamaan linear: dua langkah | Latihan berpasangan (80 menit) | Ketepatan langkah; lembar kerja | 4 |
+| 11 | TP-4 | Memodelkan soal cerita menjadi persamaan dan menyelesaikannya | Soal cerita persamaan linear | Problem based learning (80 menit) | Model dan jawaban; tugas kelompok | 5 |
+| 12 | TP-4 | Menentukan himpunan penyelesaian pertidaksamaan | Pertidaksamaan linear satu variabel | Diskusi dan garis bilangan (80 menit) | Ketepatan himpunan penyelesaian; kuis | 4 |
+| 13 | TP-5 | Menghitung untung, rugi, dan persentasenya | Aritmetika sosial: untung dan rugi | Simulasi jual beli (80 menit) | Ketepatan hitung; lembar kerja | 4 |
+| 14 | TP-5 | Menghitung diskon, pajak, dan bunga tunggal | Aritmetika sosial: diskon, pajak, bunga | Studi brosur belanja (80 menit) | Ketepatan hitung; tugas individu | 4 |
+| 15 | TP-2, TP-5 | Menyusun anggaran belanja kelas yang masuk akal | Proyek anggaran belanja kelas | Pembelajaran berbasis proyek (80 menit) | Rubrik proyek: ketepatan, kewajaran, presentasi | 10 |
+| 16 | TP-1–TP-5 | Mengerjakan soal seluruh TP | Asesmen Akhir Semester | Tes tertulis (80 menit) | Skor tes pilihan ganda dan uraian | 20 |
 
-## Kegiatan Penutup (15 menit)
-- Refleksi dan penguatan konsep oleh guru.
-- Kuis pendek 3 soal sebagai asesmen formatif.
+## Komposisi Penilaian
+| Komponen | Bobot (%) |
+|---|---|
+| Formatif (kuis, lembar kerja, tugas pertemuan 1–7 dan 9–14) | 50 |
+| Asesmen Tengah Semester | 20 |
+| Proyek anggaran belanja kelas | 10 |
+| Asesmen Akhir Semester | 20 |
+| **Total** | **100** |
 
-## Asesmen dan Rubrik
-Rubrik empat tingkat: belum tampak, mulai berkembang, berkembang sesuai harapan, sangat berkembang.
-
-## Diferensiasi
-- Siswa yang butuh bantuan: kartu langkah penyelesaian.
-- Siswa mahir: soal cerita dua langkah.
-
-## Refleksi Guru
-Catat bagian yang sulit dipahami siswa dan strategi perbaikan untuk pertemuan berikutnya.
+## Sumber Belajar
+- Buku Siswa Matematika SMP/MTs Kelas VII Kurikulum Merdeka, Kemendikbudristek.
+- Buku Panduan Guru Matematika Kelas VII, Kemendikbudristek.
+- Brosur belanja dan struk pembelian dari lingkungan sekitar siswa.
 `;
 
 const BUTIR = [
@@ -114,6 +139,7 @@ const SISWA: [string, string, number][] = [
 export async function siapkanAkunDemo() {
   const ada = await prisma.user.findUnique({ where: { email: EMAIL_DEMO } });
   if (ada) {
+    await perbaruiFormatDemo(ada.id);
     await lengkapiDataDemo(ada.id);
     return ada;
   }
@@ -131,10 +157,11 @@ async function buatDataDasarDemo() {
       jenjang: 'SMP',
       mapel: 'Matematika',
       sekolah: 'SMP Negeri Contoh',
+      emailTerverifikasi: true,
     },
   });
 
-  const kelas = await prisma.kelas.create({ data: { userId: user.id, nama: '7A', tapel: '2026/2027', kkm: 75 } });
+  const kelas = await prisma.kelas.create({ data: { userId: user.id, nama: 'VII A', tingkat: 'VII', rombel: 'A', tapel: '2026/2027', kkm: 75 } });
   for (const [nama, nis, nilai] of SISWA) {
     await prisma.siswa.create({
       data: {
@@ -149,13 +176,7 @@ async function buatDataDasarDemo() {
   await prisma.modul.create({
     data: {
       userId: user.id,
-      judul: 'Persamaan Linear Satu Variabel',
-      topik: 'Persamaan linear satu variabel',
-      jenjang: 'SMP',
-      kelas: 'VII',
-      alokasiWaktu: '2 × 40 menit',
-      tujuanPembelajaran: 'Menyelesaikan persamaan linear satu variabel dan menerapkannya pada masalah sehari-hari.',
-      konten: MODUL,
+      ...DATA_MODUL,
     },
   });
 
@@ -172,6 +193,27 @@ async function buatDataDasarDemo() {
   });
 
   return user;
+}
+
+const DATA_MODUL = {
+  judul: JUDUL_MODUL,
+  mapel: 'Matematika',
+  topik: 'Bilangan bulat dan pecahan, perbandingan, bentuk aljabar, persamaan dan pertidaksamaan linear, aritmetika sosial',
+  jenjang: 'SMP' as const,
+  kelas: 'VII',
+  semester: 'Ganjil',
+  jumlahPertemuan: 16,
+  alokasiWaktu: '2 JP × 40 menit per pertemuan',
+  tujuanPembelajaran:
+    'Peserta didik mampu mengoperasikan bilangan dan bentuk aljabar, menyelesaikan persamaan dan pertidaksamaan linear satu variabel, serta menerapkannya pada masalah sehari-hari.',
+  konten: MODUL,
+};
+
+// Akun demo dari versi lama: kelas "7A" diganti nama baku "VII A" dan modul diganti format rencana semester.
+async function perbaruiFormatDemo(userId: string) {
+  await prisma.kelas.updateMany({ where: { userId, nama: '7A' }, data: { nama: 'VII A', tingkat: 'VII', rombel: 'A' } });
+  await prisma.modul.updateMany({ where: { userId, semester: null }, data: DATA_MODUL });
+  await prisma.modul.updateMany({ where: { userId, mapel: null }, data: { mapel: 'Matematika' } });
 }
 
 // Melengkapi data demo dengan riwayat yang dibutuhkan halaman Dampak: tugas sebelumnya, analisis soal, dan satu

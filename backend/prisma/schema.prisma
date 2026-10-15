@@ -24,6 +24,11 @@ model User {
   sekolah      String?
   createdAt    DateTime @default(now())
 
+  // Verifikasi email setelah daftar. Yang disimpan hanya hash SHA-256 dari token di tautan email.
+  emailTerverifikasi Boolean   @default(false)
+  tokenVerifikasi    String?   @unique
+  tokenKedaluwarsa   DateTime?
+
   kelas   Kelas[]
   modul   Modul[]
   setSoal SetSoal[]
@@ -33,7 +38,12 @@ model Kelas {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // `nama` disusun server dari tingkat (Romawi) + jurusan + rombel, mis. "X RPL 1", supaya penulisan seragam.
+  // Kelas lama (sebelum format baku) hanya punya `nama`.
   nama      String
+  tingkat   String?
+  jurusan   String?
+  rombel    String?
   tapel     String
   kkm       Int      @default(75)
   createdAt DateTime @default(now())
@@ -74,8 +84,11 @@ model Modul {
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   judul              String
   topik              String
+  mapel              String? // null untuk modul lama
   jenjang            Jenjang
   kelas              String
+  semester           String? // Ganjil / Genap; modul berformat rencana semester (RPS)
+  jumlahPertemuan    Int?
   alokasiWaktu       String
   tujuanPembelajaran String
   kondisiKelas       String?

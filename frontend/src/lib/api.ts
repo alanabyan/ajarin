@@ -35,12 +35,42 @@ pasangCacheOffline(api, simpananOffline, {
 
 export const PESAN_OFFLINE = 'Tidak ada koneksi internet. Fitur ini butuh internet; coba lagi saat sudah tersambung.';
 
+interface DataGalat {
+  error?: string;
+  /** Pesan per kolom formulir, mis. { judul: '...' }. */
+  kolom?: Record<string, string>;
+  /** Kode galat khusus, mis. BELUM_VERIFIKASI, PERINGATAN_AI. */
+  kode?: string;
+  email?: string;
+}
+
+/** Galat dari permintaan fetch (postAlir), membawa data respons seperti galat axios. */
+export class GalatApi extends Error {
+  constructor(
+    message: string,
+    public data: DataGalat = {}
+  ) {
+    super(message);
+  }
+}
+
+function dataGalat(err: unknown): DataGalat {
+  if (err instanceof GalatApi) return err.data;
+  return (err as { response?: { data?: DataGalat } })?.response?.data ?? {};
+}
+
 // Pesan galat yang ramah dari respons API.
 export function pesanError(err: unknown, cadangan = 'Terjadi kesalahan. Coba lagi.'): string {
   const e = err as { response?: { data?: { error?: string } }; message?: string; code?: string };
   if (!e?.response && (e?.code === 'ERR_NETWORK' || e?.message === 'Network Error')) return PESAN_OFFLINE;
   return e?.response?.data?.error || e?.message || cadangan;
 }
+
+/** Pesan per kolom dari galat validasi server ({} bila tidak ada). */
+export const kolomError = (err: unknown): Record<string, string> => dataGalat(err).kolom ?? {};
+
+/** Kode galat khusus dari server, mis. 'BELUM_VERIFIKASI'. */
+export const kodeError = (err: unknown): string | undefined => dataGalat(err).kode;
 
 // POST yang dibalas aliran baris JSON (NDJSON), mis. teks modul yang ditulis AI bertahap.
 // Axios di browser tidak bisa membaca respons sebagian, jadi memakai fetch. Galat HTTP dilempar sebagai Error
@@ -64,8 +94,8 @@ export async function postAlir<T>(url: string, body: unknown, onBaris: (b: T) =>
     throw e;
   }
   if (!res.ok || !res.body) {
-    const data = (await res.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(data?.error || 'Terjadi kesalahan. Coba lagi.');
+    const data = (await res.json().catch(() => null)) as DataGalat | null;
+    throw new GalatApi(data?.error || 'Terjadi kesalahan. Coba lagi.', data ?? {});
   }
 
   const reader = res.body.getReader();

@@ -6,6 +6,7 @@ import { requireAuth } from '../middleware/auth';
 import { simpanNilaiKelas } from '../services/nilai';
 import { normNis } from '../utils/nis';
 import { BarisRekap, excelRekap } from '../utils/excel';
+import { NAMA_ORANG, NIS_VALID, ROMBEL, SEMUA_TINGKAT, namaKelasBaku, normJurusan, tapelValid } from '../utils/akademik';
 
 const router = Router();
 router.use(requireAuth);
@@ -16,11 +17,48 @@ async function milik(id: string, userId: string) {
   return kelas;
 }
 
-const kelasSchema = z.object({
-  nama: z.string().trim().min(1).max(30),
-  tapel: z.string().trim().min(4).max(20),
-  kkm: z.number().int().min(0).max(100).default(75),
-});
+const TINGKAT_ATAS = ['X', 'XI', 'XII'];
+
+const identitasSchema = z
+  .object({
+    tingkat: z.enum(SEMUA_TINGKAT as [string, ...string[]], { errorMap: () => ({ message: 'Pilih tingkat kelas (I–XII).' }) }),
+    jurusan: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z]{2,12}$/, 'Jurusan ditulis singkatan 2–12 huruf tanpa spasi, mis. RPL, TKJ, IPA.')
+      .optional()
+      .or(z.literal('')),
+    rombel: z.enum(ROMBEL as [string, ...string[]], { errorMap: () => ({ message: 'Pilih rombel dari daftar.' }) }).optional().or(z.literal('')),
+  })
+  .refine((k) => !k.jurusan || TINGKAT_ATAS.includes(k.tingkat), {
+    path: ['jurusan'],
+    message: 'Jurusan hanya untuk kelas X, XI, dan XII.',
+  });
+
+const tapelSchema = z.string().trim().refine(tapelValid, 'Tahun pelajaran berformat 2026/2027 (tahun kedua = tahun pertama + 1).');
+const kkmSchema = z.number({ invalid_type_error: 'KKM harus berupa angka.' }).int('KKM harus bilangan bulat.').min(0).max(100);
+
+const kelasSchema = identitasSchema.and(z.object({ tapel: tapelSchema, kkm: kkmSchema.default(75) }));
+
+/** Data kelas dengan nama baku, mis. { tingkat: 'X', jurusan: 'rpl', rombel: '1' } -> nama "X RPL 1". */
+function identitas(k: z.infer<typeof identitasSchema>) {
+  const jurusan = normJurusan(k.jurusan) || null;
+  const rombel = k.rombel || null;
+  return { nama: namaKelasBaku(k.tingkat, jurusan, rombel), tingkat: k.tingkat, jurusan, rombel };
+}
+
+/** Nama kelas yang sama di tahun pelajaran yang sama hanya boleh ada satu, supaya data siswa dan nilai tidak terpecah. */
+async function tolakGanda(userId: string, nama: string, tapel: string, kecuali?: string) {
+  const ada = await prisma.kelas.findFirst({
+    where: { userId, tapel, nama: { equals: nama, mode: 'insensitive' }, ...(kecuali ? { id: { not: kecuali } } : {}) },
+    select: { id: true },
+  });
+  if (ada) {
+    throw new HttpError(409, `Kelas ${nama} tahun pelajaran ${tapel} sudah ada. Buka kelas yang sudah ada, atau pilih rombel lain.`, {
+      kolom: { rombel: `Kelas ${nama} (${tapel}) sudah ada.` },
+    });
+  }
+}
 
 router.get(
   '/',
@@ -31,7 +69,16 @@ router.get(
       include: { _count: { select: { siswa: true } } },
     });
     res.json({
-      kelas: daftar.map((k) => ({ id: k.id, nama: k.nama, tapel: k.tapel, kkm: k.kkm, jumlahSiswa: k._count.siswa })),
+      kelas: daftar.map((k) => ({
+        id: k.id,
+        nama: k.nama,
+        tingkat: k.tingkat,
+        jurusan: k.jurusan,
+        rombel: k.rombel,
+        tapel: k.tapel,
+        kkm: k.kkm,
+        jumlahSiswa: k._count.siswa,
+      })),
     });
   })
 );
@@ -39,7 +86,10 @@ router.get(
 router.post(
   '/',
   handle(async (req, res) => {
-    const kelas = await prisma.kelas.create({ data: { ...kelasSchema.parse(req.body), userId: uid(req) } });
+    const data = kelasSchema.parse(req.body);
+    const id = identitas(data);
+    await tolakGanda(uid(req), id.nama, data.tapel);
+    const kelas = await prisma.kelas.create({ data: { ...id, tapel: data.tapel, kkm: data.kkm, userId: uid(req) } });
     res.status(201).json({ kelas });
   })
 );
@@ -47,8 +97,12 @@ router.post(
 router.patch(
   '/:id',
   handle(async (req, res) => {
-    await milik(req.params.id, uid(req));
-    const kelas = await prisma.kelas.update({ where: { id: req.params.id }, data: kelasSchema.partial().parse(req.body) });
+    const lama = await milik(req.params.id, uid(req));
+    const { tapel, kkm } = z.object({ tapel: tapelSchema.optional(), kkm: kkmSchema.optional() }).parse(req.body);
+    // Identitas hanya diubah bila tingkat dikirim; jurusan/rombel yang tidak dikirim dianggap dikosongkan.
+    const id = req.body?.tingkat !== undefined ? identitas(identitasSchema.parse(req.body)) : null;
+    await tolakGanda(uid(req), id?.nama ?? lama.nama, tapel ?? lama.tapel, lama.id);
+    const kelas = await prisma.kelas.update({ where: { id: lama.id }, data: { ...id, tapel, kkm } });
     res.json({ kelas });
   })
 );
@@ -78,9 +132,22 @@ router.post(
     const kelas = await milik(req.params.id, uid(req));
     const { siswa } = z
       .object({
-        siswa: z.array(z.object({ nama: z.string().trim().min(2).max(100), nis: z.string().trim().min(1).max(30) })).min(1).max(200),
+        siswa: z.array(z.object({ nama: z.string().trim(), nis: z.string().trim() })).min(1).max(200),
       })
       .parse(req.body);
+
+    // Diperiksa per siswa supaya pesan menyebut siswa mana yang salah (penting saat impor dari Excel).
+    const salah = siswa.flatMap((s) => {
+      const alasan = [
+        !NAMA_ORANG.test(s.nama) && 'nama hanya boleh huruf, spasi, titik, koma, apostrof, tanda hubung (2–100 karakter)',
+        !NIS_VALID.test(s.nis) && 'NIS harus angka 4–30 digit (boleh dipisah . / -)',
+      ].filter(Boolean);
+      return alasan.length ? [`${s.nama || '(tanpa nama)'} / ${s.nis || '(tanpa NIS)'}: ${alasan.join('; ')}`] : [];
+    });
+    if (salah.length) {
+      const lebih = salah.length > 5 ? ` dan ${salah.length - 5} lainnya` : '';
+      throw new HttpError(400, `Data siswa tidak valid. ${salah.slice(0, 5).join('. ')}${lebih}.`);
+    }
 
     const ada = new Set((await prisma.siswa.findMany({ where: { kelasId: kelas.id }, select: { nis: true } })).map((s) => normNis(s.nis)));
     const baru = siswa.filter((s) => {
@@ -106,7 +173,7 @@ router.delete(
 
 const nilaiSchema = z.object({
   jenis: z.enum(['Tugas', 'UH', 'UTS', 'UAS']),
-  mapel: z.string().trim().min(1).max(80),
+  mapel: z.string().trim().min(2).max(80),
   judul: z.string().trim().max(100).default(''),
   items: z.array(z.object({ siswaId: z.string().uuid(), nilai: z.number().min(0).max(100) })).min(1).max(200),
 });

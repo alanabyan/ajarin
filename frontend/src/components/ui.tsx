@@ -1,4 +1,6 @@
-import { ReactNode, SelectHTMLAttributes } from 'react';
+import { ReactNode, SelectHTMLAttributes, useState } from 'react';
+import { MAPEL_PER_JENJANG } from '../lib/akademik';
+import type { Jenjang } from '../types';
 import { Link, useSearchParams } from 'react-router-dom';
 
 export const NAMA_APP = 'AJARIN';
@@ -19,7 +21,22 @@ export function Logo({ ke = '/', terang = false }: { ke?: string; terang?: boole
   );
 }
 
-export function Header({ judul, deskripsi, aksi }: { judul: string; deskripsi?: string; aksi?: ReactNode }) {
+/**
+ * Judul halaman + tombol aksi. `bertumpuk`: tombol di baris sendiri di bawah judul, untuk halaman dengan banyak
+ * aksi; tanpa itu tombol di samping judul dan judul yang panjang ikut terjepit.
+ */
+export function Header({ judul, deskripsi, aksi, bertumpuk = false }: { judul: string; deskripsi?: string; aksi?: ReactNode; bertumpuk?: boolean }) {
+  if (bertumpuk) {
+    return (
+      <div className="mb-6 space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold leading-tight">{judul}</h1>
+          {deskripsi && <p className="mt-1.5 text-sm font-medium text-tinta-500">{deskripsi}</p>}
+        </div>
+        {aksi && <div className="tanpa-cetak flex flex-wrap gap-2">{aksi}</div>}
+      </div>
+    );
+  }
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
@@ -93,7 +110,7 @@ export function useCari(): string {
   return (sp.get('q') ?? '').trim().toLowerCase();
 }
 
-type NamaIkon = 'beranda' | 'modul' | 'soal' | 'kelas' | 'dampak' | 'cari' | 'hapus' | 'plus' | 'panah' | 'kanan' | 'menu' | 'bawah';
+type NamaIkon = 'beranda' | 'modul' | 'soal' | 'kelas' | 'dampak' | 'cari' | 'hapus' | 'plus' | 'panah' | 'kanan' | 'menu' | 'bawah' | 'keluar' | 'bantuan';
 
 export function Ikon({ nama, className = 'h-5 w-5' }: { nama: NamaIkon; className?: string }) {
   const gambar: Record<NamaIkon, ReactNode> = {
@@ -143,6 +160,18 @@ export function Ikon({ nama, className = 'h-5 w-5' }: { nama: NamaIkon; classNam
     kanan: <path d="m9 6 6 6-6 6" />,
     menu: <path d="M4 6h16M4 12h16M4 18h16" />,
     bawah: <path d="m6 9 6 6 6-6" />,
+    keluar: (
+      <>
+        <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+        <path d="M10 17l-5-5 5-5M5 12h11" />
+      </>
+    ),
+    bantuan: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01" />
+      </>
+    ),
   };
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -177,6 +206,137 @@ export function Sampul({ varian, lencana, className = '' }: { varian: 'modul' | 
       <div className="absolute bottom-0 right-8 h-3/5 w-1/4 rounded-t-full bg-white/70" />
       <p className="absolute left-4 top-1/2 max-w-[55%] -translate-y-1/2 text-sm font-extrabold uppercase leading-tight text-white sm:text-base">Latih, ukur, perbaiki</p>
       {badge}
+    </div>
+  );
+}
+
+/**
+ * Satu isian formulir: label, kontrol, petunjuk, dan pesan galat di bawahnya. Kontrol di `children` sebaiknya
+ * memakai id = `id` dan `aria-invalid` / `aria-describedby` dari `propsKontrol(id, galat)`.
+ */
+export function Kolom({ id, label, galat, petunjuk, children }: { id: string; label: ReactNode; galat?: string; petunjuk?: ReactNode; children: ReactNode }) {
+  return (
+    <div>
+      <label htmlFor={id} className="label">
+        {label}
+      </label>
+      {children}
+      {petunjuk && !galat && (
+        <p id={`${id}-petunjuk`} className="mt-1.5 text-xs text-tinta-500">
+          {petunjuk}
+        </p>
+      )}
+      {galat && (
+        <p id={`${id}-galat`} role="alert" className="mt-1.5 text-xs font-semibold text-merah">
+          {galat}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Atribut aksesibilitas + gaya merah untuk kontrol yang punya galat. */
+export function propsKontrol(id: string, galat?: string, petunjuk?: boolean) {
+  return {
+    id,
+    'aria-invalid': galat ? true : undefined,
+    'aria-describedby': galat ? `${id}-galat` : petunjuk ? `${id}-petunjuk` : undefined,
+    className: `input ${galat ? 'border-merah focus:border-merah focus:ring-merah/20' : ''}`,
+  };
+}
+
+const LAINNYA = '__lainnya__';
+
+/** Dropdown mata pelajaran sesuai jenjang, dengan "Lainnya" untuk mengetik sendiri. */
+export function PilihMapel({
+  id,
+  jenjang,
+  value,
+  onChange,
+  galat,
+}: {
+  id: string;
+  jenjang: Jenjang;
+  value: string;
+  onChange: (v: string) => void;
+  galat?: string;
+}) {
+  const daftar = MAPEL_PER_JENJANG[jenjang];
+  const [ketik, setKetik] = useState(() => value !== '' && !daftar.includes(value));
+  const lain = ketik || (value !== '' && !daftar.includes(value));
+  const p = propsKontrol(id, galat);
+  return (
+    <div className="space-y-2">
+      <select
+        {...p}
+        required
+        value={lain ? LAINNYA : value}
+        onChange={(e) => {
+          if (e.target.value === LAINNYA) {
+            setKetik(true);
+            onChange('');
+          } else {
+            setKetik(false);
+            onChange(e.target.value);
+          }
+        }}
+        className={`${p.className} ${value || lain ? '' : 'text-[#999]'}`}
+      >
+        <option value="" disabled>
+          Pilih mata pelajaran
+        </option>
+        {daftar.map((m) => (
+          <option key={m}>{m}</option>
+        ))}
+        <option value={LAINNYA}>Lainnya (ketik sendiri)</option>
+      </select>
+      {lain && (
+        <input
+          aria-label="Nama mata pelajaran lainnya"
+          required
+          minLength={2}
+          maxLength={80}
+          placeholder="Tulis nama mata pelajaran"
+          className={p.className}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Peringatan dari pemeriksaan isian oleh AI (kode PERINGATAN_AI). Pesan per kolom sudah tampil di bawah
+ * isiannya; di sini ringkasannya, plus pilihan untuk tetap melanjutkan karena AI bisa keliru.
+ */
+export function PeringatanAI({
+  kolom,
+  label,
+  onLanjut,
+  sibuk,
+  teksLanjut,
+}: {
+  kolom: Record<string, string>;
+  label: Record<string, string>;
+  onLanjut: () => void;
+  sibuk: boolean;
+  teksLanjut: string;
+}) {
+  return (
+    <div role="alert" className="peringatan border-ajarin-200 bg-ajarin-50 text-tinta-900">
+      <p className="font-bold text-ajarin-600">Pemeriksaan AI: ada isian yang tampaknya tidak sesuai</p>
+      <ul className="mt-2 list-disc space-y-1 pl-5">
+        {Object.entries(kolom).map(([k, v]) => (
+          <li key={k}>
+            <b>{label[k] ?? k}:</b> {v}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs text-tinta-500">Perbaiki isian yang ditandai lalu kirim lagi. Bila Anda yakin isian sudah benar, Anda bisa tetap melanjutkan.</p>
+      <button type="button" onClick={onLanjut} disabled={sibuk} className="btn-garis mt-3 px-4 py-2 text-xs">
+        {teksLanjut}
+      </button>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Header, Ikon, Kosong, Memuat, Pesan, Sampul, useCari } from '../components/ui';
+import { cocok, teksModul } from '../lib/cari';
 import api, { pesanError } from '../lib/api';
 import type { ModulRingkas } from '../types';
 
@@ -34,7 +35,7 @@ export default function ModulList() {
   }
 
   if (!daftar) return <Memuat />;
-  const tampil = daftar.filter((m) => `${m.judul} ${m.topik}`.toLowerCase().includes(cari));
+  const tampil = daftar.filter((m) => cocok(teksModul(m), cari));
 
   return (
     <div>
@@ -55,7 +56,7 @@ export default function ModulList() {
       {daftar.length === 0 ? (
         <Kosong
           judul="Belum ada modul ajar"
-          isi="Isi topik dan tujuan pembelajaran, lalu AJARIN menyusun drafnya untuk Anda."
+          isi="Isi kelas, semester, cakupan materi, dan tujuan pembelajaran, lalu AJARIN menyusun rencana semesternya untuk Anda."
           aksi={
             <Link to="/modul/baru" className="btn-utama">
               Buat modul pertama
@@ -83,6 +84,7 @@ export default function ModulList() {
                     <span aria-hidden="true" className="h-3 w-px bg-[#E6E6E6]" />
                     <span>
                       {m.jenjang} kelas {m.kelas}
+                      {m.semester && ` · Semester ${m.semester}`}
                     </span>
                   </p>
                 </div>

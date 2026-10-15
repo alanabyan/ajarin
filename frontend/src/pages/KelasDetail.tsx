@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Kosong, Memuat, Pesan, SelectPil } from '../components/ui';
+import { NAMA_ORANG, NIS_VALID } from '../lib/akademik';
 import api, { pesanError, unduh } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { bacaBerkasSiswa, unduhTemplatSiswa, type SiswaBaru } from '../lib/berkasSiswa';
@@ -86,9 +87,11 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
 
   async function tambahSatu(e: FormEvent) {
     e.preventDefault();
-    setSibuk(true);
     setGalat('');
     setInfo('');
+    if (!NAMA_ORANG.test(nama.trim())) return setGalat('Nama siswa hanya boleh berisi huruf, spasi, titik, koma, apostrof, dan tanda hubung (minimal 2 karakter).');
+    if (!NIS_VALID.test(nis.trim())) return setGalat('NIS harus berupa angka 4–30 digit (boleh dipisah titik, garis miring, atau tanda hubung).');
+    setSibuk(true);
     try {
       await kirimSiswa([{ nama: nama.trim(), nis: nis.trim() }]);
       setNama('');
@@ -194,8 +197,8 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
             Daftar Siswa
           </h2>
           <form onSubmit={tambahSatu} className="flex flex-col gap-[7px] sm:flex-row">
-            <input aria-label="Nama siswa" required minLength={2} placeholder="Tambah Nama Siswa..." className="input-pil sm:w-60" value={nama} onChange={(e) => setNama(e.target.value)} />
-            <input aria-label="NIS" required placeholder="Masukkan NIS.." className="input-pil sm:w-44" value={nis} onChange={(e) => setNis(e.target.value)} />
+            <input aria-label="Nama siswa" required minLength={2} maxLength={100} placeholder="Tambah Nama Siswa..." className="input-pil sm:w-60" value={nama} onChange={(e) => setNama(e.target.value)} />
+            <input aria-label="NIS" required inputMode="numeric" maxLength={30} placeholder="Masukkan NIS.." className="input-pil sm:w-44" value={nis} onChange={(e) => setNis(e.target.value)} />
             <button type="submit" disabled={sibuk} className="btn-utama py-3">
               Tambah Siswa
             </button>

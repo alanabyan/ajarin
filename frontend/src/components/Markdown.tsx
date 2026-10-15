@@ -8,7 +8,18 @@ import remarkMath from 'remark-math';
 export default function Markdown({ children, className = '' }: { children: string; className?: string }) {
   return (
     <div className={`prosa ${className}`}>
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        // Tabel lebar (mis. rencana per pertemuan) digulir ke samping di layar sempit, bukan merusak tata letak.
+        components={{
+          table: ({ node: _, ...p }) => (
+            <div className="overflow-x-auto">
+              <table {...p} />
+            </div>
+          ),
+        }}
+      >
         {children}
       </ReactMarkdown>
     </div>

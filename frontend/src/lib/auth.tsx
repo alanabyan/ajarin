@@ -15,7 +15,8 @@ interface AuthValue {
   user: User | null;
   memuat: boolean;
   masuk: (email: string, password: string) => Promise<void>;
-  daftar: (data: DataDaftar) => Promise<void>;
+  /** Mendaftar tanpa masuk: akun harus diverifikasi lewat email dulu. Mengembalikan email terdaftar. */
+  daftar: (data: DataDaftar) => Promise<string>;
   masukDemo: () => Promise<void>;
   keluar: () => void;
 }
@@ -72,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       memuat,
       masuk: async (email, password) => terima((await api.post('/auth/masuk', { email, password })).data),
-      daftar: async (data) => terima((await api.post('/auth/daftar', data)).data),
+      daftar: async (data) => (await api.post('/auth/daftar', data)).data.email as string,
       masukDemo: async () => terima((await api.post('/auth/demo')).data),
       keluar: () => {
         try {

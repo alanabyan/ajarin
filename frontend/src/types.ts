@@ -14,8 +14,13 @@ export interface ModulRingkas {
   id: string;
   judul: string;
   topik: string;
+  /** null untuk modul lama */
+  mapel: string | null;
   jenjang: Jenjang;
   kelas: string;
+  /** Ganjil / Genap; null untuk modul lama (format satu pertemuan). */
+  semester: string | null;
+  jumlahPertemuan: number | null;
   alokasiWaktu: string;
   createdAt: string;
   updatedAt: string;
@@ -66,7 +71,11 @@ export interface SetSoal {
 
 export interface KelasRingkas {
   id: string;
+  /** Nama baku, mis. "X RPL 1". Kelas lama bisa bernama bebas dengan tingkat/jurusan/rombel null. */
   nama: string;
+  tingkat?: string | null;
+  jurusan?: string | null;
+  rombel?: string | null;
   tapel: string;
   kkm: number;
   jumlahSiswa: number;
@@ -141,4 +150,14 @@ export interface Rekap {
   kolom: string[];
   baris: BarisRekap[];
   ringkasan: { jumlahSiswa: number; rataKelas: number | null; tuntas: number; remedial: number };
+}
+
+/** Bekal dari halaman modul ke form Buat Soal (lewat state navigasi). */
+export interface DariModul {
+  id: string;
+  judul: string;
+  mapel: string;
+  jenjang: Jenjang;
+  kelas: string;
+  materi: string[];
 }

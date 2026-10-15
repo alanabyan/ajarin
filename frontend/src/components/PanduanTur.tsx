@@ -24,7 +24,7 @@ const LANGKAH: Langkah[] = [
     target: 'menu-modul',
     sidebar: true,
     judul: 'Modul Ajar',
-    isi: 'Isi topik, kelas, dan tujuan pembelajaran. Draf modul Kurikulum Merdeka tersusun otomatis, bisa disunting, lalu dicetak sebagai PDF.',
+    isi: 'Isi kelas, semester, cakupan materi, dan tujuan pembelajaran. AI menyusun rencana satu semester lengkap dengan tabel tiap pertemuan, bisa disunting, dicetak, atau diunduh sebagai Word.',
   },
   {
     target: 'menu-soal',
@@ -36,7 +36,7 @@ const LANGKAH: Langkah[] = [
     target: 'menu-kelas',
     sidebar: true,
     judul: 'Kelas & Nilai',
-    isi: 'Kelola daftar siswa dan rekap nilai. Hasil kuis dari Google Form bisa diimpor otomatis, dan siswa di bawah KKM langsung ditandai.',
+    isi: 'Buat kelas dengan nama baku (mis. X RPL 1), kelola daftar siswa, dan rekap nilai. Hasil kuis Google Form bisa diimpor otomatis, dan siswa di bawah KKM langsung ditandai.',
   },
   {
     target: 'menu-dampak',
@@ -47,13 +47,18 @@ const LANGKAH: Langkah[] = [
   {
     target: 'cari',
     judul: 'Pencarian cepat',
-    isi: 'Ketik untuk menyaring modul, soal, atau kelas. Di halaman daftar, hasilnya langsung ikut tersaring.',
+    isi: 'Cari modul, soal, dan kelas sekaligus dari halaman mana pun; hasilnya muncul langsung di bawah kolom. Kata kunci boleh diketik acak, mis. "matematika ganjil".',
   },
   {
     target: 'offline',
     sidebar: true,
     judul: 'Bisa dipakai offline',
     isi: 'Ajarin menyimpan data Anda di perangkat. Saat sinyal hilang, modul, soal, dan nilai tetap bisa dibuka.',
+  },
+  {
+    target: 'akun',
+    judul: 'Akun dan tombol Keluar',
+    isi: 'Klik nama atau inisial Anda di sini untuk melihat akun dan menekan Keluar. Jangan lupa keluar bila memakai perangkat bersama.',
   },
   {
     target: 'panduan',

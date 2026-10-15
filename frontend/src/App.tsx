@@ -3,7 +3,7 @@ import Layout, { Gerbang } from './components/Layout';
 import Beranda from './pages/Beranda';
 import Dampak from './pages/Dampak';
 import Dashboard from './pages/Dashboard';
-import { Daftar, Masuk } from './pages/Akun';
+import { Daftar, Masuk, Verifikasi } from './pages/Akun';
 import KelasDetail from './pages/KelasDetail';
 import KelasList from './pages/KelasList';
 import RaporSiswa from './pages/RaporSiswa';
@@ -21,6 +21,7 @@ export default function App() {
       <Route path="/" element={<Beranda />} />
       <Route path="/masuk" element={<Masuk />} />
       <Route path="/daftar" element={<Daftar />} />
+      <Route path="/verifikasi" element={<Verifikasi />} />
       <Route path="/privasi" element={<Privasi />} />
 
       <Route

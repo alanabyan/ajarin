@@ -4,6 +4,7 @@ import {
   Document,
   HeadingLevel,
   Packer,
+  PageOrientation,
   Paragraph,
   ShadingType,
   Tab,
@@ -191,11 +192,21 @@ export function markdownKeBlok(md: string): (Paragraph | Table)[] {
   return blok;
 }
 
-function dokumen(isi: (Paragraph | Table)[]): Document {
+function dokumen(isi: (Paragraph | Table)[], landscape = false): Document {
   return new Document({
     creator: 'Ajarin',
     styles: { default: { document: { run: { font: FONT, size: UKURAN } } } },
-    sections: [{ properties: { page: { margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } }, children: isi }],
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 },
+            ...(landscape ? { size: { orientation: PageOrientation.LANDSCAPE } } : {}),
+          },
+        },
+        children: isi,
+      },
+    ],
   });
 }
 
@@ -209,15 +220,18 @@ export async function wordModul(m: {
   topik: string;
   jenjang: string;
   kelas: string;
+  semester?: string | null;
+  jumlahPertemuan?: number | null;
   alokasiWaktu: string;
   konten: string;
 }): Promise<Buffer> {
-  const isi = [
-    judulDokumen(m.judul),
-    keterangan(`${m.topik} · ${m.jenjang} kelas ${m.kelas} · ${m.alokasiWaktu}`),
-    ...markdownKeBlok(m.konten),
-  ];
-  return Packer.toBuffer(dokumen(isi));
+  const rps = !!m.semester;
+  const info = rps
+    ? `${m.jenjang} kelas ${m.kelas} · Semester ${m.semester} · ${m.jumlahPertemuan} pertemuan · ${m.alokasiWaktu}`
+    : `${m.topik} · ${m.jenjang} kelas ${m.kelas} · ${m.alokasiWaktu}`;
+  const isi = [judulDokumen(m.judul), keterangan(info), ...markdownKeBlok(m.konten)];
+  // Modul format rencana semester berisi tabel 7 kolom, jadi halaman dibuat mendatar.
+  return Packer.toBuffer(dokumen(isi, rps));
 }
 
 const HURUF = ['A', 'B', 'C', 'D'];

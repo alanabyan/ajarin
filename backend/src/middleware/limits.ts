@@ -7,6 +7,7 @@ const batas = (windowMs: number, limit: number, error: string) =>
   rateLimit({ windowMs, limit, standardHeaders: true, legacyHeaders: false, message: { error } });
 
 export const authLimiter = batas(15 * 60 * 1000, 30, 'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.');
+export const kirimUlangLimiter = batas(15 * 60 * 1000, 5, 'Terlalu sering meminta email verifikasi. Coba lagi beberapa menit lagi.');
 export const aiLimiter = batas(60 * 1000, 6, 'Terlalu banyak permintaan AI. Tunggu sebentar lalu coba lagi.');
 
 const BATAS_HARIAN = Number(process.env.AI_DAILY_LIMIT) || 20;

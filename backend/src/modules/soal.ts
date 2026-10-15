@@ -7,6 +7,8 @@ import { aiLimiter, kuotaAI } from '../middleware/limits';
 import { buatSoal } from '../services/ai';
 import { ambilJawaban, buatKuis, perbaruiDaftarSiswa } from '../services/googleForms';
 import { simpanNilaiKelas } from '../services/nilai';
+import { pastikanIsianSesuai } from '../services/validasiIsian';
+import { JENJANG, SEMUA_TINGKAT } from '../utils/akademik';
 import { bangunPilihan } from '../utils/pilihanSiswa';
 import { excelKahoot, excelSoalLengkap, waktuKahootValid } from '../utils/excel';
 import { wordSoal } from '../utils/word';
@@ -32,13 +34,14 @@ function siswaSasaran<T extends { id: string }>(set: { targetKelasId: string | n
 }
 
 const buatSchema = z.object({
-  judul: z.string().trim().min(2).max(150),
+  judul: z.string().trim().min(5).max(150),
   mapel: z.string().trim().min(2).max(80),
-  jenjang: z.enum(['SD', 'SMP', 'SMA', 'SMK']),
-  kelas: z.string().trim().min(1).max(20),
-  materi: z.string().trim().min(2).max(300),
+  jenjang: z.enum(JENJANG),
+  kelas: z.enum(SEMUA_TINGKAT as [string, ...string[]], { errorMap: () => ({ message: 'Pilih kelas dari daftar.' }) }),
+  materi: z.string().trim().min(3).max(300),
   tingkat: z.enum(['mudah', 'sedang', 'sulit']),
   jumlah: z.number().int().min(1).max(20),
+  abaikanPeringatan: z.boolean().optional(),
 });
 
 router.post(
@@ -46,7 +49,16 @@ router.post(
   aiLimiter,
   kuotaAI,
   handle(async (req, res) => {
-    const { judul, ...input } = buatSchema.parse(req.body);
+    const { judul, abaikanPeringatan, ...input } = buatSchema.parse(req.body);
+    await pastikanIsianSesuai({
+      jenis: 'soal',
+      jenjang: input.jenjang,
+      kelas: input.kelas,
+      mapel: input.mapel,
+      kolom: { judul, materi: input.materi },
+      label: { judul: 'Judul set soal', materi: 'Materi' },
+      abaikanPeringatan,
+    });
     const hasil = await buatSoal(input);
     const set = await prisma.setSoal.create({
       data: {

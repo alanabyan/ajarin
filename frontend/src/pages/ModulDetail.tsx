@@ -4,7 +4,9 @@ import Markdown from '../components/Markdown';
 import { Header, Memuat, Pesan } from '../components/ui';
 import api, { pesanError, unduh } from '../lib/api';
 import { useJaringan } from '../lib/offline/jaringan';
-import type { Modul } from '../types';
+import { materiDariModul } from '../lib/akademik';
+import { useAuth } from '../lib/auth';
+import type { DariModul, Modul } from '../types';
 
 export default function ModulDetail() {
   const { id } = useParams();
@@ -18,6 +20,7 @@ export default function ModulDetail() {
   const [info, setInfo] = useState('');
   const [mengunduh, setMengunduh] = useState(false);
   const { online } = useJaringan();
+  const { user } = useAuth();
 
   useEffect(() => {
     api
@@ -69,6 +72,20 @@ export default function ModulDetail() {
     }
   }
 
+  // Form Buat Soal diisi dari modul ini: mapel, jenjang, kelas, dan daftar materi dari tabel rencana pertemuan.
+  function buatSoal() {
+    const m = modul!;
+    const dariModul: DariModul = {
+      id: m.id,
+      judul: m.judul,
+      mapel: m.mapel ?? user?.mapel ?? '',
+      jenjang: m.jenjang,
+      kelas: m.kelas,
+      materi: materiDariModul(m.konten, m.topik),
+    };
+    navigate('/soal/baru', { state: { dariModul } });
+  }
+
   async function salin() {
     try {
       await navigator.clipboard.writeText(modul!.konten);
@@ -81,8 +98,13 @@ export default function ModulDetail() {
   return (
     <div>
       <Header
+        bertumpuk
         judul={modul.judul}
-        deskripsi={`${modul.topik} · ${modul.jenjang} kelas ${modul.kelas} · ${modul.alokasiWaktu}`}
+        deskripsi={
+          modul.semester
+            ? `${modul.jenjang} kelas ${modul.kelas} · Semester ${modul.semester} · ${modul.jumlahPertemuan} pertemuan · ${modul.alokasiWaktu}`
+            : `${modul.topik} · ${modul.jenjang} kelas ${modul.kelas} · ${modul.alokasiWaktu}`
+        }
         aksi={
           ubah ? (
             <>
@@ -105,6 +127,9 @@ export default function ModulDetail() {
             <>
               <button type="button" onClick={() => setUbah(true)} className="btn-utama">
                 Sunting
+              </button>
+              <button type="button" onClick={buatSoal} className="btn-garis">
+                Buat soal dari modul ini
               </button>
               <button type="button" onClick={() => window.print()} className="btn-garis">
                 Cetak / PDF

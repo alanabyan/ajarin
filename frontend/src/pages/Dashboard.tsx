@@ -183,7 +183,7 @@ export default function Dashboard() {
                 { ke: '/dampak', judul: 'Dampak & peta belajar', isi: 'Materi yang belum dikuasai, tren kelas, dan perubahan nilai setelah remedial.', selesai: false },
               ]
             : [
-                { ke: '/modul/baru', judul: 'Buat modul ajar', isi: 'Isi topik dan tujuan, AI menyusun drafnya.', selesai: d.modul.length > 0 },
+                { ke: '/modul/baru', judul: 'Buat modul ajar', isi: 'Isi kelas, semester, dan tujuan; AI menyusun rencana semesternya.', selesai: d.modul.length > 0 },
                 { ke: '/soal/baru', judul: 'Buat set soal', isi: 'Soal pilihan ganda dengan kunci dan pembahasan.', selesai: d.soal.length > 0 },
                 { ke: '/kelas', judul: 'Tambah kelas dan siswa', isi: 'Impor daftar siswa dari Excel atau tempel dari spreadsheet.', selesai: siswa > 0 },
                 { ke: '/dampak', judul: 'Catat nilai, lihat dampaknya', isi: 'Peta materi dan siswa yang perlu perhatian muncul otomatis.', selesai: d.bernilai > 0 },

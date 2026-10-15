@@ -1,9 +1,10 @@
-﻿import { FormEvent, ReactNode, useEffect, useState } from 'react';
-import { Navigate, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+﻿import { ReactNode, useEffect, useRef, useState } from 'react';
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { offline } from '../lib/api';
 import { useJaringan } from '../lib/offline/jaringan';
 import PanduanTur, { tandaiTurDilihat, turSudahDilihat } from './PanduanTur';
+import KolomCari from './KolomCari';
 import { BannerStatus, PanelOffline } from './StatusOffline';
 import { Ikon, Logo, Memuat } from './ui';
 
@@ -15,9 +16,6 @@ const MENU: { ke: string; label: string; ikon: 'beranda' | 'modul' | 'soal' | 'k
   { ke: '/dampak', label: 'Dampak & Peta Belajar', ikon: 'dampak' },
 ];
 
-// Halaman yang daftarnya ikut tersaring oleh kolom cari di bilah atas.
-const HALAMAN_CARI = ['/modul', '/soal', '/kelas'];
-
 export function Gerbang({ children }: { children: ReactNode }) {
   const { user, memuat } = useAuth();
   if (memuat) return <Memuat />;
@@ -25,38 +23,84 @@ export function Gerbang({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function KolomCari() {
+/** Menu akun di pojok kanan atas: selalu terlihat (juga di HP), berisi identitas akun dan tombol Keluar. */
+function MenuAkun({ inisial, onPanduan, onKeluar }: { inisial: string; onPanduan: () => void; onKeluar: () => void }) {
+  const { user } = useAuth();
+  const [buka, setBuka] = useState(false);
+  const wadah = useRef<HTMLDivElement>(null);
+  const tombol = useRef<HTMLButtonElement>(null);
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const [sp, setSp] = useSearchParams();
-  const langsung = HALAMAN_CARI.includes(pathname);
-  const [teks, setTeks] = useState(sp.get('q') ?? '');
 
-  // Pindah halaman: kolom ikut isi ?q= halaman itu (kosong bila halamannya tidak mendukung pencarian).
-  useEffect(() => setTeks(langsung ? sp.get('q') ?? '' : ''), [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => setBuka(false), [pathname]);
 
-  function ubah(v: string) {
-    setTeks(v);
-    if (langsung) setSp(v ? { q: v } : {}, { replace: true });
-  }
-
-  function kirim(e: FormEvent) {
-    e.preventDefault();
-    if (!langsung && teks.trim()) navigate(`/modul?q=${encodeURIComponent(teks.trim())}`);
-  }
+  useEffect(() => {
+    if (!buka) return;
+    const luar = (e: PointerEvent) => {
+      if (!wadah.current?.contains(e.target as Node)) setBuka(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setBuka(false);
+        tombol.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', luar);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('pointerdown', luar);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [buka]);
 
   return (
-    <form onSubmit={kirim} role="search" data-tour="cari" className="relative min-w-0 flex-1 sm:max-w-md">
-      <Ikon nama="cari" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-tinta-300" />
-      <input
-        type="search"
-        aria-label="Cari modul, soal, atau kelas"
-        placeholder="Search..."
-        value={teks}
-        onChange={(e) => ubah(e.target.value)}
-        className="w-full rounded-[21px] border-[0.5px] border-[#999] bg-white py-2.5 pl-11 pr-4 text-sm placeholder:text-tinta-300 focus:border-ajarin-500 focus:outline-none focus:ring-2 focus:ring-ajarin-500/20"
-      />
-    </form>
+    <div ref={wadah} className="relative shrink-0" data-tour="akun">
+      <button
+        ref={tombol}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={buka}
+        aria-controls="menu-akun"
+        onClick={() => setBuka((v) => !v)}
+        className="flex items-center gap-2 rounded-full border border-tinta-100 py-1 pl-1 pr-2 transition-colors hover:bg-ajarin-50 sm:pr-3"
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ajarin-100 text-sm font-bold text-ajarin-700" aria-hidden="true">
+          {inisial}
+        </span>
+        <span className="hidden max-w-[140px] truncate text-sm font-semibold text-tinta-900 md:block">{user?.nama}</span>
+        <span className="sr-only">Menu akun {user?.nama}</span>
+        <Ikon nama="bawah" className={`h-4 w-4 text-tinta-500 transition-transform ${buka ? 'rotate-180' : ''}`} />
+      </button>
+      {buka && (
+        <div id="menu-akun" role="menu" className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-[14px] border border-tinta-100 bg-white shadow-kartu">
+          <div className="border-b border-tinta-100 px-4 py-3">
+            <p className="truncate font-bold text-tinta-900">{user?.nama}</p>
+            <p className="truncate text-xs text-tinta-500">{user?.email}</p>
+            <p className="mt-1 text-xs text-tinta-500">
+              {user?.jenjang} · {user?.mapel}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setBuka(false);
+              onPanduan();
+            }}
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-semibold text-tinta-900 hover:bg-ajarin-50"
+          >
+            <Ikon nama="bantuan" className="h-5 w-5 text-ajarin-500" /> Panduan fitur
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={onKeluar}
+            className="flex w-full items-center gap-3 border-t border-tinta-100 px-4 py-3 text-left text-sm font-bold text-merah hover:bg-red-50"
+          >
+            <Ikon nama="keluar" className="h-5 w-5" /> Keluar
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -188,14 +232,7 @@ export default function Layout() {
             >
               ?
             </button>
-            <div
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ajarin-100 text-sm font-bold text-ajarin-700"
-              title={user?.nama}
-              role="img"
-              aria-label={`Akun ${user?.nama ?? ''}`}
-            >
-              {inisial}
-            </div>
+            <MenuAkun inisial={inisial} onPanduan={() => setTur(true)} onKeluar={keluarAkun} />
           </div>
           <main>
             <BannerStatus />
