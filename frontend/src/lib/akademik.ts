@@ -1,3 +1,4 @@
+import { tanpaRumus } from './rumus';
 import type { Jenjang } from '../types';
 
 // Cermin dari backend/src/utils/akademik.ts; ubah keduanya bersamaan.
@@ -154,12 +155,13 @@ export function materiDariModul(konten: string, topik: string): string[] {
     if (kolom < 0) continue;
     // i + 1 adalah baris pemisah |---|, isi tabel mulai i + 2.
     for (let j = i + 2; j < baris.length && baris[j].trim().startsWith('|'); j++) {
-      const isi = sel(baris[j])[kolom]?.replace(/\*\*/g, '').trim();
+      // Rumus dibuang: pilihan materi berupa teks biasa, bukan Markdown, jadi $...$ akan tampil mentah.
+      const isi = tanpaRumus(sel(baris[j])[kolom]?.replace(/\*\*/g, '') ?? '');
       if (isi && !/asesmen|ujian|\bUTS\b|\bUAS\b|^-+$/i.test(isi)) hasil.push(isi);
     }
     break;
   }
-  const daftar = hasil.length ? hasil : topik.split(/[,;]/).map((t) => t.trim());
+  const daftar = hasil.length ? hasil : tanpaRumus(topik).split(/[,;]/).map((t) => t.trim());
   return [...new Set(daftar.filter((t) => t.length >= 3))].slice(0, 24);
 }
 

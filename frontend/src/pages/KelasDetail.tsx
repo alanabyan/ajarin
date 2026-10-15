@@ -20,6 +20,9 @@ const satuDesimal = (n: number | null | undefined): string =>
 // Nama kolom rekap berbentuk "UH: Bab 3 (Matematika)"; mata pelajaran ada di dalam kurung terakhir.
 const mapelDariKolom = (kolom: string): string => /\(([^()]*)\)$/.exec(kolom)?.[1] ?? '';
 
+// Judul penilaian manual (mis. "Bab 3") paling panjang 30 karakter; server memeriksa batas yang sama.
+const BATAS_JUDUL_NILAI = 30;
+
 // UAS paling banyak 2 kali per mata pelajaran di satu kelas (semester ganjil dan genap); server memeriksa hal yang sama.
 const BATAS_UAS = 2;
 
@@ -394,7 +397,20 @@ function TabNilai({
             onChange={(v) => setJenis(v as JenisNilai)}
             grup={[{ opsi: JENIS }]}
           />
-          <input aria-label="Judul penilaian (opsional)" placeholder="Judul, mis. Bab 3 (opsional)" className="input-pil sm:w-56" value={judul} onChange={(e) => setJudul(e.target.value)} />
+          <div className="sm:w-56">
+            <input
+              aria-label={`Judul penilaian (opsional, maksimal ${BATAS_JUDUL_NILAI} karakter)`}
+              aria-describedby="hitung-judul"
+              placeholder="Judul, mis. Bab 3 (opsional)"
+              maxLength={BATAS_JUDUL_NILAI}
+              className="input-pil"
+              value={judul}
+              onChange={(e) => setJudul(e.target.value.slice(0, BATAS_JUDUL_NILAI))}
+            />
+            <p id="hitung-judul" className={`mt-1 px-2 text-right text-[11px] ${judul.length >= BATAS_JUDUL_NILAI ? 'font-semibold text-merah' : 'text-tinta-500'}`}>
+              {judul.length}/{BATAS_JUDUL_NILAI}
+            </p>
+          </div>
           <button type="button" onClick={simpan} disabled={sibuk || terisi.length === 0 || tidakValid || uasPenuh || !mapel.trim() || !jenis} className="btn-utama py-3">
             {sibuk ? 'Menyimpan...' : `Simpan ${terisi.length} Nilai`}
           </button>

@@ -8,7 +8,7 @@ const MODEL = () => process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 // Rumus matematika ditulis dengan delimiter dolar supaya bisa dirender KaTeX di frontend.
 const ATURAN_RUMUS =
   'Tulis rumus atau notasi matematika dalam LaTeX dan WAJIB dibungkus tanda dolar: $...$ untuk sebaris, $$...$$ untuk persamaan tersendiri. ' +
-  'Jangan menulis LaTeX tanpa tanda dolar.';
+  'Jangan menulis LaTeX tanpa tanda dolar, dan jangan memakai penanda \\( \\) atau \\[ \\].';
 
 async function kirimGroq(body: object, signal: AbortSignal): Promise<Response> {
   const apiKey = process.env.GROQ_API_KEY;
@@ -190,6 +190,7 @@ Susunan wajib (heading ##, urut):
 5. ## Rencana Pembelajaran per Pertemuan — SATU tabel dengan tepat ${i.jumlahPertemuan} baris isi (satu baris per pertemuan, urut 1 sampai ${i.jumlahPertemuan}) dan kolom:
    | Pertemuan ke- | TP | Indikator Ketercapaian | Materi Pokok | Metode & Bentuk Pembelajaran (estimasi waktu) | Kriteria & Bentuk Penilaian | Bobot (%) |
    Kolom TP berisi kode TP (mis. TP-1). Sisipkan Asesmen Tengah Semester di sekitar pertengahan dan Asesmen Akhir Semester di pertemuan terakhir. Total kolom Bobot = 100.
+   PENTING: isi SEMUA sel tabel dengan kata-kata biasa, TANPA rumus atau notasi LaTeX (tulis "rumus distribusi Poisson", bukan rumusnya). Kolom Materi Pokok berupa nama materi singkat.
 6. ## Komposisi Penilaian — tabel | Komponen | Bobot (%) | (formatif, sumatif tengah semester, sumatif akhir semester, dll.), total 100, konsisten dengan tabel pertemuan.
 7. ## Sumber Belajar — daftar buku teks/sumber yang relevan dan mudah didapat.
 Jangan tambahkan bagian lain dan jangan menulis pembuka atau penutup di luar dokumen.`;

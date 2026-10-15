@@ -2,8 +2,9 @@ import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import { rapikanRumus } from '../lib/rumus';
 
-// Render Markdown + rumus LaTeX ($...$ / $$...$$). HTML mentah sengaja tidak diaktifkan,
+// Render Markdown + rumus LaTeX ($...$ / $$...$$; \( \) dan \[ \] diubah dulu ke tanda dolar). HTML mentah sengaja tidak diaktifkan,
 // sehingga konten hasil AI maupun suntingan guru tidak dapat menyisipkan skrip.
 export default function Markdown({ children, className = '' }: { children: string; className?: string }) {
   return (
@@ -20,7 +21,7 @@ export default function Markdown({ children, className = '' }: { children: strin
           ),
         }}
       >
-        {children}
+        {rapikanRumus(children)}
       </ReactMarkdown>
     </div>
   );
@@ -34,7 +35,7 @@ export function Inline({ children }: { children: string }) {
       rehypePlugins={[rehypeKatex]}
       components={{ p: ({ children: c }) => <span>{c}</span> }}
     >
-      {children}
+      {rapikanRumus(children)}
     </ReactMarkdown>
   );
 }

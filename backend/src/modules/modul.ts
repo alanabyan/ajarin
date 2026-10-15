@@ -8,6 +8,7 @@ import { aiLimiter, kuotaAI } from '../middleware/limits';
 import { alirModul, buatModul, saranModul, type InputModul } from '../services/ai';
 import { pastikanIsianSesuai } from '../services/validasiIsian';
 import { JENJANG, KELAS_PER_JENJANG, MENIT_PER_JP, SEMUA_TINGKAT, kelasCocok } from '../utils/akademik';
+import { rapikanRumus } from '../utils/rumus';
 import { wordModul } from '../utils/word';
 
 const router = Router();
@@ -65,7 +66,7 @@ function simpanModul(userId: string, input: InputBuat, alokasiWaktu: string, kon
       alokasiWaktu,
       tujuanPembelajaran: input.tujuanPembelajaran,
       kondisiKelas: input.kondisiKelas || null,
-      konten,
+      konten: rapikanRumus(konten),
     },
   });
 }

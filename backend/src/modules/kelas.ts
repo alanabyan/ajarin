@@ -190,7 +190,8 @@ router.delete(
 const nilaiSchema = z.object({
   jenis: z.enum(['Tugas', 'UH', 'UTS', 'UAS']),
   mapel: z.string().trim().min(2).max(80),
-  judul: z.string().trim().max(100).default(''),
+  // Judul penilaian manual, mis. "Bab 3". Impor dari Google Form memakai judul set soal dan tidak lewat sini.
+  judul: z.string().trim().max(30, 'Judul penilaian maksimal 30 karakter.').default(''),
   items: z.array(z.object({ siswaId: z.string().uuid(), nilai: z.number().min(0).max(100) })).min(1).max(200),
 });
 

@@ -16,6 +16,7 @@ import {
   WidthType,
 } from 'docx';
 import { latexToText } from './latexToText';
+import { rapikanRumus } from './rumus';
 import type { SetUntukEkspor } from './excel';
 
 // pembaca sederhana: judul, daftar, tabel, kutipan, garis, serta tebal / miring / kode / rumus di dalam baris.
@@ -229,7 +230,7 @@ export async function wordModul(m: {
   const info = rps
     ? `${m.jenjang} kelas ${m.kelas} · Semester ${m.semester} · ${m.jumlahPertemuan} pertemuan · ${m.alokasiWaktu}`
     : `${m.topik} · ${m.jenjang} kelas ${m.kelas} · ${m.alokasiWaktu}`;
-  const isi = [judulDokumen(m.judul), keterangan(info), ...markdownKeBlok(m.konten)];
+  const isi = [judulDokumen(m.judul), keterangan(info), ...markdownKeBlok(rapikanRumus(m.konten))];
   // Modul format rencana semester berisi tabel 7 kolom, jadi halaman dibuat mendatar.
   return Packer.toBuffer(dokumen(isi, rps));
 }
