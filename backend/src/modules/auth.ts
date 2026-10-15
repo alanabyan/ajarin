@@ -15,7 +15,7 @@ const router = Router();
 const BERLAKU_TOKEN = 24 * 60 * 60 * 1000;
 
 // Batas panjang isian akun; frontend memakai angka yang sama (src/pages/Akun.tsx).
-export const BATAS = { nama: 80, email: 100, sekolah: 100 };
+export const BATAS = { nama: 30, email: 100, sekolah: 30 };
 
 const namaSchema = z
   .string()

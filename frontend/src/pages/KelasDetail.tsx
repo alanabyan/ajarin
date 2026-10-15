@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Kosong, Memuat, Pesan, TombolKembali } from '../components/ui';
 import { BATAS_IMPOR_SISWA, MAPEL_RESMI, NAMA_ORANG, NIS_VALID } from '../lib/akademik';
 import PilihCari from '../components/PilihCari';
+import { NavHalaman, usePaging } from '../components/Halaman';
 import { BilahTerpilih, Centang, CentangSemua, usePilihan } from '../components/PilihSiswa';
 import api, { pesanError, unduh } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -59,6 +60,7 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
   const [berkas, setBerkas] = useState<{ nama: string; siswa: SiswaBaru[]; dilewati: number } | null>(null);
   const pilihan = usePilihan(siswa.map((s) => s.id));
   const [menghapus, setMenghapus] = useState(false);
+  const paging = usePaging(siswa, 25);
   const [sibuk, setSibuk] = useState(false);
   const inputBerkas = useRef<HTMLInputElement>(null);
   // Berkas yang sudah dibaca menggantikan isian teks.
@@ -260,28 +262,34 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
         )}
         <BilahTerpilih jumlah={pilihan.jumlah} sibuk={menghapus} onHapus={hapusTerpilih} onBatal={pilihan.kosongkan} />
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[520px]">
+          {/* Di HP kolom NIS pindah ke bawah nama, supaya NIS dan tombol Hapus tetap terlihat tanpa digeser. */}
+          <table className="w-full sm:min-w-[520px]">
             <thead>
               <tr className={KEPALA_TABEL}>
-                <th className="w-10 px-3 py-3.5">
-                  {siswa.length > 0 && <CentangSemua semua={pilihan.semua} sebagian={pilihan.sebagian} onChange={pilihan.ubahSemua} label="Pilih semua siswa" />}
+                <th className="w-8 px-2 py-3.5 sm:w-10 sm:px-3">
+                  {siswa.length > 0 && (
+                    <CentangSemua semua={pilihan.semua} sebagian={pilihan.sebagian} onChange={pilihan.ubahSemua} label={`Pilih semua ${siswa.length} siswa`} />
+                  )}
                 </th>
-                <th className="w-16 px-3 py-3.5">No</th>
-                <th className="px-3 py-3.5">Nama Siswa</th>
-                <th className="px-3 py-3.5 text-center">NIS</th>
-                <th className="px-3 py-3.5 text-right">Aksi</th>
+                <th className="w-10 px-2 py-3.5 sm:w-16 sm:px-3">No</th>
+                <th className="px-2 py-3.5 sm:px-3">Nama Siswa</th>
+                <th className="hidden px-3 py-3.5 text-center sm:table-cell">NIS</th>
+                <th className="px-2 py-3.5 text-right sm:px-3">Aksi</th>
               </tr>
             </thead>
             <tbody className="text-sm font-medium text-tinta-400">
-              {siswa.map((s, i) => (
+              {paging.tampil.map((s, i) => (
                 <tr key={s.id} className={`${BARIS_TABEL} ${pilihan.ada(s.id) ? 'bg-ajarin-50' : ''}`}>
-                  <td className="px-3 py-3">
+                  <td className="px-2 py-3 sm:px-3">
                     <Centang checked={pilihan.ada(s.id)} onChange={() => pilihan.ubah(s.id)} label={`Pilih ${s.nama}`} />
                   </td>
-                  <td className="px-3 py-3">{i + 1}</td>
-                  <td className="px-3 py-3">{s.nama}</td>
-                  <td className="px-3 py-3 text-center tabular-nums">{s.nis}</td>
-                  <td className="px-3 py-3 text-right">
+                  <td className="px-2 py-3 sm:px-3">{paging.awal + i + 1}</td>
+                  <td className="px-2 py-3 sm:px-3">
+                    {s.nama}
+                    <span className="block text-xs tabular-nums text-tinta-300 sm:hidden">{s.nis}</span>
+                  </td>
+                  <td className="hidden px-3 py-3 text-center tabular-nums sm:table-cell">{s.nis}</td>
+                  <td className="px-2 py-3 text-right sm:px-3">
                     <button type="button" onClick={() => hapus(s)} className="font-semibold text-merah hover:underline">
                       Hapus
                     </button>
@@ -298,6 +306,7 @@ function TabSiswa({ kelasId, siswa, muat }: { kelasId: string; siswa: Siswa[]; m
             </tbody>
           </table>
         </div>
+        <NavHalaman paging={paging} />
       </section>
     </div>
   );
@@ -325,6 +334,7 @@ function TabNilai({
   const [sibuk, setSibuk] = useState(false);
 
   const [ditolak, setDitolak] = useState('');
+  const paging = usePaging(siswa, 25);
 
   const angkaNilai = (v: string) => Number(v.replace(',', '.'));
   const terisi = siswa.filter((s) => nilai[s.id] !== undefined && nilai[s.id] !== '');
@@ -369,7 +379,8 @@ function TabNilai({
 
   return (
     <section className={KARTU_TABEL} aria-labelledby="judul-input-nilai">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      {/* Judul di baris sendiri; mapel, jenis, judul penilaian, dan tombol simpan sejajar di bawahnya. */}
+      <div className="flex flex-col gap-3">
         <h2 id="judul-input-nilai" className="text-xl font-bold text-ajarin-700">
           Daftar Input Nilai
         </h2>
@@ -397,19 +408,25 @@ function TabNilai({
             onChange={(v) => setJenis(v as JenisNilai)}
             grup={[{ opsi: JENIS }]}
           />
-          <div className="sm:w-56">
+          {/* Penghitung karakter di dalam kolom, supaya tinggi kolom sama dengan dropdown di sebelahnya. */}
+          <div className="relative sm:w-64">
             <input
               aria-label={`Judul penilaian (opsional, maksimal ${BATAS_JUDUL_NILAI} karakter)`}
               aria-describedby="hitung-judul"
               placeholder="Judul, mis. Bab 3 (opsional)"
               maxLength={BATAS_JUDUL_NILAI}
-              className="input-pil"
+              className="input-pil pr-14"
               value={judul}
               onChange={(e) => setJudul(e.target.value.slice(0, BATAS_JUDUL_NILAI))}
             />
-            <p id="hitung-judul" className={`mt-1 px-2 text-right text-[11px] ${judul.length >= BATAS_JUDUL_NILAI ? 'font-semibold text-merah' : 'text-tinta-500'}`}>
+            <span
+              id="hitung-judul"
+              className={`pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] tabular-nums ${
+                judul.length >= BATAS_JUDUL_NILAI ? 'font-semibold text-merah' : 'text-tinta-300'
+              }`}
+            >
               {judul.length}/{BATAS_JUDUL_NILAI}
-            </p>
+            </span>
           </div>
           <button type="button" onClick={simpan} disabled={sibuk || terisi.length === 0 || tidakValid || uasPenuh || !mapel.trim() || !jenis} className="btn-utama py-3">
             {sibuk ? 'Menyimpan...' : `Simpan ${terisi.length} Nilai`}
@@ -470,9 +487,9 @@ function TabNilai({
             </tr>
           </thead>
           <tbody className="text-sm font-medium text-tinta-400">
-            {siswa.map((s, i) => (
+            {paging.tampil.map((s, i) => (
               <tr key={s.id} className={BARIS_TABEL}>
-                <td className="px-2 py-2 text-center sm:px-3">{i + 1}</td>
+                <td className="px-2 py-2 text-center sm:px-3">{paging.awal + i + 1}</td>
                 <td className="px-2 py-2 sm:px-3">
                   <label htmlFor={`n-${s.id}`}>{s.nama}</label>
                   <span className="block text-xs tabular-nums text-tinta-300 sm:hidden">{s.nis}</span>
@@ -506,6 +523,7 @@ function TabNilai({
           </tbody>
         </table>
       </div>
+      <NavHalaman paging={paging} />
     </section>
   );
 }
@@ -528,6 +546,8 @@ function TabRekap({ rekap, kelasId }: { rekap: Rekap; kelasId: string }) {
       }),
     [rekap.baris, kolom, kkm]
   );
+
+  const pagingRekap = usePaging(baris, 25, mapel);
 
   const berNilai = baris.filter((b) => b.rataRata !== null).map((b) => b.rataRata as number);
   const rataKelas = berNilai.length ? berNilai.reduce((t, n) => t + n, 0) / berNilai.length : null;
@@ -611,10 +631,10 @@ function TabRekap({ rekap, kelasId }: { rekap: Rekap; kelasId: string }) {
               </tr>
             </thead>
             <tbody className="text-sm font-medium text-tinta-400">
-              {baris.map((b, i) => (
+              {pagingRekap.tampil.map((b, i) => (
                 <tr key={b.siswaId} className={BARIS_TABEL}>
-                  <td className="px-3 py-3">{i + 1}</td>
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-3">{pagingRekap.awal + i + 1}</td>
+                  <td className="min-w-[9rem] px-3 py-3">
                     <Link to={`/kelas/${kelasId}/siswa/${b.siswaId}`} className="hover:text-ajarin-500 hover:underline">
                       {b.nama}
                     </Link>
@@ -639,6 +659,7 @@ function TabRekap({ rekap, kelasId }: { rekap: Rekap; kelasId: string }) {
             </tbody>
           </table>
         </div>
+        <NavHalaman paging={pagingRekap} />
       </section>
     </div>
   );

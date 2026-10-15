@@ -16,6 +16,7 @@ import {
   tapelSekarang,
 } from '../lib/akademik';
 import { useAuth } from '../lib/auth';
+import { NavHalaman, usePaging } from '../components/Halaman';
 import { BilahTerpilih, Centang, CentangSemua, usePilihan } from '../components/PilihSiswa';
 import type { KelasRingkas, Siswa } from '../types';
 
@@ -273,6 +274,7 @@ export default function KelasList() {
   const q = cariSiswa.trim().toLowerCase();
   const siswaTampil = siswa.filter((s) => `${s.nama} ${s.nis}`.toLowerCase().includes(q));
   const pilihan = usePilihan(siswaTampil.map((s) => s.id));
+  const paging = usePaging(siswaTampil, 25, `${kelasId}|${q}`);
   const [menghapus, setMenghapus] = useState(false);
 
   async function hapusTerpilih() {
@@ -382,32 +384,40 @@ export default function KelasList() {
           </div>
           <BilahTerpilih jumlah={pilihan.jumlah} sibuk={menghapus} onHapus={hapusTerpilih} onBatal={pilihan.kosongkan} />
           <div className="mt-3 overflow-x-auto rounded-[7px] border border-[#E6E6E6]">
-            <table className="w-full min-w-[560px] text-sm">
+            <table className="w-full text-sm sm:min-w-[560px]">
               <thead>
                 <tr className="border-b border-[#E6E6E6] text-left font-semibold text-ajarin-700">
-                  <th className="w-10 px-4 py-3.5">
+                  <th className="w-8 px-2 py-3.5 sm:w-10 sm:px-4">
                     {siswaTampil.length > 0 && (
-                      <CentangSemua semua={pilihan.semua} sebagian={pilihan.sebagian} onChange={pilihan.ubahSemua} label="Pilih semua siswa yang tampil" />
+                      <CentangSemua
+                        semua={pilihan.semua}
+                        sebagian={pilihan.sebagian}
+                        onChange={pilihan.ubahSemua}
+                        label={`Pilih semua ${siswaTampil.length} siswa yang tampil`}
+                      />
                     )}
                   </th>
-                  <th className="w-16 px-4 py-3.5">No</th>
-                  <th className="px-4 py-3.5">Nama Siswa</th>
-                  <th className="px-4 py-3.5 text-center">Kelas</th>
-                  <th className="px-4 py-3.5 text-center">NIS</th>
-                  <th className="px-4 py-3.5 text-right">Aksi</th>
+                  <th className="w-10 px-2 py-3.5 sm:w-16 sm:px-4">No</th>
+                  <th className="px-2 py-3.5 sm:px-4">Nama Siswa</th>
+                  <th className="hidden px-4 py-3.5 text-center sm:table-cell">Kelas</th>
+                  <th className="hidden px-4 py-3.5 text-center sm:table-cell">NIS</th>
+                  <th className="px-2 py-3.5 text-right sm:px-4">Aksi</th>
                 </tr>
               </thead>
               <tbody className="font-medium text-tinta-400">
-                {siswaTampil.map((s, i) => (
+                {paging.tampil.map((s, i) => (
                   <tr key={s.id} className={`border-b border-[#E6E6E6] last:border-0 ${pilihan.ada(s.id) ? 'bg-ajarin-50' : ''}`}>
-                    <td className="px-4 py-3">
+                    <td className="px-2 py-3 sm:px-4">
                       <Centang checked={pilihan.ada(s.id)} onChange={() => pilihan.ubah(s.id)} label={`Pilih ${s.nama}`} />
                     </td>
-                    <td className="px-4 py-3">{i + 1}</td>
-                    <td className="px-4 py-3">{s.nama}</td>
-                    <td className="px-4 py-3 text-center">{kelasTerpilih?.nama}</td>
-                    <td className="px-4 py-3 text-center tabular-nums">{s.nis}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-2 py-3 sm:px-4">{paging.awal + i + 1}</td>
+                    <td className="px-2 py-3 sm:px-4">
+                      {s.nama}
+                      <span className="block text-xs tabular-nums text-tinta-300 sm:hidden">{s.nis}</span>
+                    </td>
+                    <td className="hidden px-4 py-3 text-center sm:table-cell">{kelasTerpilih?.nama}</td>
+                    <td className="hidden px-4 py-3 text-center tabular-nums sm:table-cell">{s.nis}</td>
+                    <td className="px-2 py-3 text-right sm:px-4">
                       <button type="button" onClick={() => hapusSiswa(s)} className="font-semibold text-merah hover:underline">
                         Hapus
                       </button>
@@ -424,6 +434,7 @@ export default function KelasList() {
               </tbody>
             </table>
           </div>
+          <NavHalaman paging={paging} />
         </section>
       )}
     </div>

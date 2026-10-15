@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Markdown from '../components/Markdown';
-import { Header, Memuat, Pesan } from '../components/ui';
+import { Header, Memuat, Pesan, TombolKembali } from '../components/ui';
 import api, { pesanError, unduh } from '../lib/api';
 import { useJaringan } from '../lib/offline/jaringan';
 import { materiDariModul } from '../lib/akademik';
@@ -33,7 +33,16 @@ export default function ModulDetail() {
       .catch((e) => setGalat(pesanError(e, 'Modul tidak ditemukan.')));
   }, [id]);
 
-  if (!modul) return galat ? <Pesan nada="galat">{galat}</Pesan> : <Memuat />;
+  if (!modul) {
+    return galat ? (
+      <div>
+        <TombolKembali ke="/modul" label="Kembali ke Modul Ajar" />
+        <Pesan nada="galat">{galat}</Pesan>
+      </div>
+    ) : (
+      <Memuat />
+    );
+  }
 
   async function simpan() {
     setSibuk(true);
@@ -97,6 +106,7 @@ export default function ModulDetail() {
 
   return (
     <div>
+      <TombolKembali ke="/modul" label="Kembali ke Modul Ajar" />
       <Header
         bertumpuk
         judul={modul.judul}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ImporNilai from '../components/ImporNilai';
 import { Inline } from '../components/Markdown';
-import { Header, Memuat, Pesan } from '../components/ui';
+import { Header, Memuat, Pesan, TombolKembali } from '../components/ui';
 import api, { pesanError, unduh } from '../lib/api';
 import { mintaTokenGoogle, muatGoogle } from '../lib/google';
 import { useJaringan } from '../lib/offline/jaringan';
@@ -120,7 +120,16 @@ export default function SoalDetail() {
     if (set?.targetKelasId) setKelasPilih(set.targetKelasId);
   }, [set?.targetKelasId]);
 
-  if (!set) return galat ? <Pesan nada="galat">{galat}</Pesan> : <Memuat />;
+  if (!set) {
+    return galat ? (
+      <div>
+        <TombolKembali ke="/soal" label="Kembali ke Bank Soal" />
+        <Pesan nada="galat">{galat}</Pesan>
+      </div>
+    ) : (
+      <Memuat />
+    );
+  }
 
   const sasaran = set.targetKelasId ? set.targetSiswa.length : 0;
   const kelasSasaran = kelas.find((k) => k.id === set.targetKelasId);
@@ -197,6 +206,7 @@ export default function SoalDetail() {
 
   return (
     <div>
+      <TombolKembali ke="/soal" label="Kembali ke Bank Soal" />
       <Header
         bertumpuk
         judul={set.judul}

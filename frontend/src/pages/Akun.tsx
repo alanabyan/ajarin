@@ -221,8 +221,8 @@ export function Daftar() {
   return (
     <Bingkai judul="Daftar" deskripsi="Buat akun gratis untuk mulai menyusun perangkat ajar.">
       <form ref={formRef} onSubmit={kirim} noValidate className="space-y-4">
-        <Kolom id="nama" label="Nama lengkap" galat={kolom.nama}>
-          <input {...propsKontrol('nama', kolom.nama)} autoComplete="name" maxLength={BATAS_AKUN.nama} value={f.nama} onChange={(e) => atur('nama', e.target.value)} />
+        <Kolom id="nama" label="Nama lengkap" galat={kolom.nama} petunjuk={`${f.nama.length}/${BATAS_AKUN.nama} karakter.`}>
+          <input {...propsKontrol('nama', kolom.nama, true)} autoComplete="name" maxLength={BATAS_AKUN.nama} value={f.nama} onChange={(e) => atur('nama', e.target.value)} />
         </Kolom>
         <Kolom id="email" label="Email" galat={kolom.email} petunjuk="Tautan verifikasi akan dikirim ke email ini.">
           <input

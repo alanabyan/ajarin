@@ -1,5 +1,5 @@
 // Batas panjang dan aturan isian akun; sama dengan backend (src/modules/auth.ts).
-export const BATAS_AKUN = { nama: 80, email: 100, sekolah: 100, sandi: 72 };
+export const BATAS_AKUN = { nama: 30, email: 100, sekolah: 30, sandi: 72 };
 
 export function galatNama(nama: string): string | undefined {
   const n = nama.trim();

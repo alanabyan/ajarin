@@ -56,9 +56,9 @@ export default function Profil() {
         <Kolom id="email" label="Email" petunjuk="Email dipakai untuk masuk dan tidak bisa diubah.">
           <input {...propsKontrol('email', undefined, true)} value={user?.email ?? ''} readOnly disabled className="input bg-tinta-50 text-tinta-500" />
         </Kolom>
-        <Kolom id="nama" label="Nama lengkap" galat={kolom.nama}>
+        <Kolom id="nama" label="Nama lengkap" galat={kolom.nama} petunjuk={`${nama.length}/${BATAS_AKUN.nama} karakter.`}>
           <input
-            {...propsKontrol('nama', kolom.nama)}
+            {...propsKontrol('nama', kolom.nama, true)}
             autoComplete="name"
             maxLength={BATAS_AKUN.nama}
             value={nama}

@@ -81,8 +81,8 @@ Token Google hanya dipakai satu kali per permintaan dan tidak disimpan.
 - [x] Bahasa Indonesia, tema SDG 4
 - [x] Tanpa CMS; framework bebas (React, Express)
 - [x] Antarmuka jelas dan ramah pengguna; akun demo untuk juri
-- [ ] Hosting publik (Vercel), tautan dimasukkan ke proposal
-- [ ] Repository publik (GitHub / GitLab)
+- [x] Hosting publik (Vercel), tautan dimasukkan ke proposal
+- [x] Repository publik (GitHub / GitLab)
 - [ ] Proposal PDF (maks. 30 halaman) dan video YouTube (maks. 3 menit) sesuai ketentuan panitia
 - [ ] Surat pernyataan orisinalitas
 
